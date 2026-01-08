@@ -443,7 +443,10 @@ const Decoder = struct {
     }
 
     fn grow_repeated(self: *Decoder, repeated: *RepeatedField, field: *const MiniTableField) DecodeError!void {
-        _ = field;
+        // Initialize element_size on first access (message data is zero-initialized).
+        if (repeated.element_size == 0) {
+            repeated.element_size = element_size_for_field(field);
+        }
 
         const new_capacity = if (repeated.capacity == 0) 8 else repeated.capacity * 2;
 
@@ -462,6 +465,20 @@ const Decoder = struct {
 
         repeated.data = new_data.ptr;
         repeated.capacity = new_capacity;
+    }
+
+    fn element_size_for_field(field: *const MiniTableField) u16 {
+        return switch (field.field_type) {
+            .TYPE_BOOL => 1,
+            .TYPE_INT32, .TYPE_UINT32, .TYPE_FLOAT => 4,
+            .TYPE_SINT32, .TYPE_SFIXED32, .TYPE_FIXED32 => 4,
+            .TYPE_ENUM => 4,
+            .TYPE_INT64, .TYPE_UINT64, .TYPE_DOUBLE => 8,
+            .TYPE_SINT64, .TYPE_SFIXED64, .TYPE_FIXED64 => 8,
+            .TYPE_STRING, .TYPE_BYTES => @sizeOf(StringView),
+            .TYPE_MESSAGE => @sizeOf(?*Message),
+            .TYPE_GROUP => 0,
+        };
     }
 
     fn skip_unknown_field(self: *Decoder, msg: *Message, tag: Tag) DecodeError!void {
