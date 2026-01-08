@@ -1,6 +1,12 @@
 .{
     .name = .proto_zig,
     .version = "0.0.1",
+    .dependencies = .{
+        .afl_kit = .{
+            .url = "git+https://github.com/nizox/zig-afl-kit#a156f8b589ed30064e81643f14f4ed314a0e9466",
+            .hash = "afl_kit-0.1.0-NdJ3cuEhAAATfSCR1pTC0LUxH7l0-0JGgcnu5X9TQodF",
+        },
+    },
     .fingerprint = 0xa31104b60862b34f,
     .minimum_zig_version = "0.15.2",
     .paths = .{

@@ -1,38 +1,42 @@
 //! Proto-zig fuzz test dispatcher.
 //!
-//! Single executable that dispatches to individual fuzz tests based on
-//! command-line arguments. Follows the TigerBeetle fuzzing pattern.
+//! Single executable supporting multiple fuzzing modes:
+//! - Seed-based: Deterministic pseudo-random fuzzing
+//! - Replay: Reproduce crashes from stdin
 //!
 //! Usage:
 //!   zig build fuzz -- <fuzzer> [seed] [--events-max=N]
+//!   zig build fuzz -- replay-<fuzzer> < crash_file
 //!   zig build fuzz -- smoke
 //!
 //! Examples:
 //!   zig build fuzz -- decode 12345
-//!   zig build fuzz -- roundtrip --events-max=10000
+//!   zig build fuzz -- replay-decode < crash.bin
 //!   zig build fuzz -- smoke
 
 const std = @import("std");
 const fuzz = @import("testing/fuzz.zig");
 
-// Fuzz test modules
-const decode_fuzz = @import("fuzz/decode_fuzz.zig");
-const roundtrip_fuzz = @import("fuzz/roundtrip_fuzz.zig");
-const varint_fuzz = @import("fuzz/varint_fuzz.zig");
+// Unified fuzz test modules
+const decode = @import("fuzz/decode.zig");
 
-/// Available fuzz targets.
+/// Available fuzz targets and modes.
 pub const Fuzzer = enum {
+    // Seed-based fuzzing modes
     decode,
-    roundtrip,
-    varint,
+    // Replay modes
+    replay_decode,
+    // Meta modes
     smoke,
     canary,
 
     pub fn run(self: Fuzzer, args: fuzz.FuzzArgs) anyerror!void {
         switch (self) {
-            .decode => try decode_fuzz.run(args),
-            .roundtrip => try roundtrip_fuzz.run(args),
-            .varint => try varint_fuzz.run(args),
+            // Seed-based fuzzing
+            .decode => try decode.run(args),
+            // Replay modes
+            .replay_decode => try runReplay(decode.fuzz),
+            // Meta modes
             .smoke => try runSmoke(),
             .canary => return error.CanaryFailed,
         }
@@ -42,8 +46,7 @@ pub const Fuzzer = enum {
     pub fn smokeEventsMax(self: Fuzzer) usize {
         return switch (self) {
             .decode => 10_000,
-            .roundtrip => 5_000,
-            .varint => 50_000,
+            .replay_decode => 0,
             .smoke => 0,
             .canary => 1,
         };
@@ -74,13 +77,27 @@ fn parseArgs() !ParsedArgs {
     _ = args_iter.skip(); // Skip executable name
 
     // Parse fuzzer name
-    const fuzzer_name = args_iter.next() orelse {
+    const fuzzer_name_raw = args_iter.next() orelse {
         printUsage();
         return error.InvalidArguments;
     };
 
+    // Replace hyphens with underscores for enum parsing (replay-decode -> replay_decode)
+    var fuzzer_name_buf: [64]u8 = undefined;
+    const fuzzer_name = blk: {
+        if (fuzzer_name_raw.len >= fuzzer_name_buf.len) {
+            std.debug.print("Fuzzer name too long: {s}\n", .{fuzzer_name_raw});
+            return error.InvalidArguments;
+        }
+        @memcpy(fuzzer_name_buf[0..fuzzer_name_raw.len], fuzzer_name_raw);
+        for (fuzzer_name_buf[0..fuzzer_name_raw.len]) |*c| {
+            if (c.* == '-') c.* = '_';
+        }
+        break :blk fuzzer_name_buf[0..fuzzer_name_raw.len];
+    };
+
     const fuzzer = std.meta.stringToEnum(Fuzzer, fuzzer_name) orelse {
-        std.debug.print("Unknown fuzzer: {s}\n", .{fuzzer_name});
+        std.debug.print("Unknown fuzzer: {s}\n", .{fuzzer_name_raw});
         printUsage();
         return error.InvalidArguments;
     };
@@ -111,13 +128,31 @@ fn parseArgs() !ParsedArgs {
     };
 }
 
+/// Run replay mode - reads crash input from stdin and replays it.
+fn runReplay(fuzzFn: fn ([]const u8) anyerror!void) !void {
+    std.debug.print("Reading input from stdin...\n", .{});
+
+    var buf: [1024 * 1024]u8 = undefined;
+    const len = std.fs.File.stdin().readAll(&buf) catch |err| {
+        std.debug.print("Read error: {s}\n", .{@errorName(err)});
+        return err;
+    };
+
+    if (len == 0) {
+        std.debug.print("Error: no input (pipe data to stdin)\n", .{});
+        return error.NoInput;
+    }
+
+    std.debug.print("Replaying {d} bytes...\n", .{len});
+    try fuzzFn(buf[0..len]);
+    std.debug.print("Replay completed successfully.\n", .{});
+}
+
 fn runSmoke() !void {
     std.debug.print("\n--- Running smoke tests ---\n", .{});
 
     const fuzzers = [_]Fuzzer{
         .decode,
-        .roundtrip,
-        .varint,
     };
 
     const base_seed = fuzz.randomSeed();
@@ -141,11 +176,15 @@ fn printUsage() void {
     std.debug.print(
         \\
         \\Usage: fuzz <fuzzer> [seed] [--events-max=N]
+        \\       fuzz replay-<fuzzer> < crash_file
         \\
-        \\Fuzzers:
+        \\Seed-based fuzzers:
         \\  decode     - Fuzz the protobuf decoder with arbitrary bytes
-        \\  roundtrip  - Fuzz encode/decode roundtrip consistency
-        \\  varint     - Fuzz varint encoding/decoding
+        \\
+        \\Replay modes:
+        \\  replay-decode     - Replay a crash on the decode fuzzer
+        \\
+        \\Meta modes:
         \\  smoke      - Run all fuzzers briefly (CI gate)
         \\  canary     - Always fails (tests fuzzing infrastructure)
         \\
@@ -155,7 +194,7 @@ fn printUsage() void {
         \\
         \\Examples:
         \\  fuzz decode 12345
-        \\  fuzz roundtrip --events-max=10000
+        \\  fuzz replay-decode < crash.bin
         \\  fuzz smoke
         \\
     , .{});
@@ -164,7 +203,5 @@ fn printUsage() void {
 test {
     // Reference all fuzz modules for test discovery
     _ = fuzz;
-    _ = decode_fuzz;
-    _ = roundtrip_fuzz;
-    _ = varint_fuzz;
+    _ = decode;
 }

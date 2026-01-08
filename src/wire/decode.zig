@@ -81,7 +81,7 @@ pub fn decode(
 
 const Decoder = struct {
     input: []const u8,
-    pos: u32,
+    pos: usize,
     arena: *Arena,
     options: DecodeOptions,
     depth: u8,
@@ -275,14 +275,11 @@ const Decoder = struct {
         };
         self.pos += len_result.consumed;
 
-        if (len_result.value > std.math.maxInt(u32)) {
-            return error.Malformed;
-        }
-
-        const length: u32 = @intCast(len_result.value);
-        if (self.pos + length > self.input.len) {
+        if (len_result.value > self.input.len -| self.pos) {
             return error.EndOfStream;
         }
+        const length: usize = @intCast(len_result.value);
+        const sub_end = self.pos + length;
 
         // Get submessage table.
         const sub_table = parent_table.submessages[field.submsg_index];
@@ -297,9 +294,6 @@ const Decoder = struct {
         const saved_depth = self.depth;
 
         self.depth += 1;
-        // Note: We need to temporarily view a subset of input. Since we can't
-        // modify the slice, we track the end position and check bounds.
-        const sub_end = self.pos + length;
 
         // Create a sub-decoder for the submessage.
         var sub_decoder = Decoder{
@@ -421,16 +415,11 @@ const Decoder = struct {
         };
         self.pos += len_result.consumed;
 
-        if (len_result.value > std.math.maxInt(u32)) {
-            return error.Malformed;
-        }
-
-        const length: u32 = @intCast(len_result.value);
-        const end_pos = self.pos + length;
-
-        if (end_pos > self.input.len) {
+        if (len_result.value > self.input.len -| self.pos) {
             return error.EndOfStream;
         }
+        const length: usize = @intCast(len_result.value);
+        const end_pos = self.pos + length;
 
         // Decode packed elements.
         while (self.pos < end_pos) {

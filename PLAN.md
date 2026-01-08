@@ -1,6 +1,6 @@
 # Proto-Zig: Protobuf Implementation in Zig
 
-A standalone implementation of protobuf's upb library from scratch in Zig v0.15.2, following Tiger Style principles.
+A standalone implementation of protobuf's upb library from scratch in Zig, following Tiger Style principles.
 
 ## Current Implementation Status
 
@@ -33,10 +33,20 @@ A standalone implementation of protobuf's upb library from scratch in Zig v0.15.
 
 ## Changelog
 
+### 2026-01-09 - Integer Overflow Fix (AFL++ Discovery)
+- AFL++ fuzzing discovered integer overflow in wire format reader
+- **Root cause**: `read_length_delimited()` used `u32` for position/length arithmetic
+- When `data_start + length` overflowed u32, bounds check was bypassed
+- **Fix**: Changed position tracking from `u32` to `usize` throughout:
+  - `reader.zig`: `ReadResult.consumed`, `skip_field` return type, internal counters
+  - `decode.zig`: `Decoder.pos` field
+- This matches upb's approach of using pointer-sized types (`const char*`)
+- Added saturating subtraction for safe overflow checks: `len > bytes.len -| pos`
+- See [FUZZ_PLAN.md](FUZZ_PLAN.md) for fuzzing infrastructure details
+
 ### 2026-01-08 - Inline Validation (upb/TigerBeetle pattern)
-- Removed separate `validate_wire_format()` function
-- Conformance runner now validates by decoding with empty schema (all fields unknown)
 - Validation happens inline during decoding, matching upb and TigerBeetle patterns
+- Conformance runner now validates by decoding with empty schema (all fields unknown)
 - Improved conformance results from 811 to 1163 passing tests (97%)
 - Remaining 36 failures require schema knowledge (packed fields, submessages)
 
@@ -51,9 +61,6 @@ A standalone implementation of protobuf's upb library from scratch in Zig v0.15.
 - Implemented wire format encoder with two-pass size calculation
 - Implemented bootstrap MiniTables for ConformanceRequest/Response
 - Implemented conformance test runner with length-prefixed protocol
-- Fixed Zig 0.15.2 API changes (stdin/stdout, build system)
-- Fixed struct field reordering issue using `extern struct`
-- Fixed oneof case storage at correct offset
 - Achieved 811 passing conformance tests
 
 ## Scope
@@ -515,6 +522,7 @@ pub fn build(b: *std.Build) void {
 - Random valid messages round-trip correctly
 - Random corrupted input doesn't crash (returns error)
 - Bit-flip corruption detection
+- See [FUZZ_PLAN.md](FUZZ_PLAN.md) for comprehensive fuzzing strategy (native Zig + AFL++)
 
 ### Conformance Tests
 Run against official protobuf conformance suite:
@@ -543,7 +551,7 @@ Run against official protobuf conformance suite:
 
 - [ ] No dynamic allocation after initialization
 - [ ] All loops have fixed upper bounds
-- [ ] Explicitly-sized types (`u32`, not `usize`)
+- [ ] Explicitly-sized types (`u32` for values, `usize` for positions/indices)
 - [ ] Minimum 2 assertions per function
 - [ ] No recursion (use explicit stack)
 - [ ] Functions <= 70 lines

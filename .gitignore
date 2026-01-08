@@ -1,2 +1,4 @@
+fuzz/output/
+
 zig-out/
 .zig-cache/

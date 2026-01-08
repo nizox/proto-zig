@@ -1,59 +1,74 @@
-//! Decode fuzzer for proto-zig.
+//! Unified decode fuzzer for proto-zig.
+//!
+//! Supports three fuzzing modes:
+//! 1. Seed-based: Generates pseudo-random inputs for deterministic testing
+//! 2. Native: Uses Zig's built-in coverage-guided fuzzing (zig test --fuzz)
+//! 3. Replay: Reproduces crashes from raw input via stdin
 //!
 //! Feeds arbitrary bytes to the protobuf decoder to find:
 //! - Buffer overflows
 //! - Infinite loops on malformed input
 //! - Memory corruption
 //! - Unhandled error cases
-//!
-//! Uses a variety of test schemas to exercise different code paths.
 
 const std = @import("std");
-const fuzz = @import("../testing/fuzz.zig");
-const proto = @import("../proto.zig");
+const fuzz_util = @import("../testing/fuzz.zig");
+const proto = @import("proto");
+const shared_corpus = @import("corpus.zig");
 
 const Arena = proto.Arena;
 const Message = proto.Message;
 const MiniTable = proto.MiniTable;
 const MiniTableField = proto.MiniTableField;
-const FieldType = proto.FieldType;
 const decode = proto.decode;
 const DecodeOptions = proto.DecodeOptions;
 
-/// Run the decode fuzzer.
-pub fn run(args: fuzz.FuzzArgs) !void {
-    var ctx = fuzz.FuzzContext.init(args);
-    var prng = fuzz.FuzzPrng.init(args.seed);
+// Arena buffer for decode operations
+var arena_buffer: [256 * 1024]u8 = undefined;
 
-    // Arena buffer for decoding
-    var arena_buffer: [64 * 1024]u8 = undefined;
+/// Core fuzzing function - tests input against all schemas and option variants.
+/// Used by native fuzzer, replay mode, and seed-based fuzzing.
+pub fn fuzz(input: []const u8) !void {
+    // Test with each schema
+    inline for (test_schemas) |schema| {
+        fuzzWithSchema(input, schema);
+    }
+}
+
+fn fuzzWithSchema(input: []const u8, schema: *const MiniTable) void {
+    // Test with various decode options to maximize coverage
+    const option_variants = [_]DecodeOptions{
+        .{}, // defaults
+        .{ .max_depth = 5 },
+        .{ .max_depth = 100 },
+        .{ .check_utf8 = false },
+        .{ .alias_string = true },
+    };
+
+    for (option_variants) |options| {
+        var arena = Arena.init(&arena_buffer);
+        const msg = Message.new(&arena, schema) orelse continue;
+        _ = decode(input, msg, &arena, options) catch {};
+    }
+}
+
+/// Seed-based fuzzing mode - generates random inputs for deterministic testing.
+pub fn run(args: fuzz_util.FuzzArgs) !void {
+    var ctx = fuzz_util.FuzzContext.init(args);
+    var prng = fuzz_util.FuzzPrng.init(args.seed);
 
     // Input buffer for fuzz data
     var input_buffer: [4096]u8 = undefined;
 
     while (ctx.shouldContinue()) {
-        // Generate random input
+        // Generate random input with exponential size distribution
         const input_len = prng.int_exponential(u32, 64);
         const actual_len = @min(input_len, input_buffer.len);
         prng.bytes(input_buffer[0..actual_len]);
         const input = input_buffer[0..actual_len];
 
-        // Pick a random schema
-        const schema = prng.pick(*const MiniTable, &test_schemas);
-
-        // Pick random decode options
-        const options = DecodeOptions{
-            .max_depth = prng.intRangeInclusive(u8, 1, 100),
-            .check_utf8 = prng.boolean(),
-            .alias_string = prng.boolean(),
-        };
-
-        // Reset arena and decode
-        var arena = Arena.init(&arena_buffer);
-        const msg = Message.new(&arena, schema) orelse continue;
-
-        // Attempt decode - we don't care about errors, just crashes
-        _ = decode(input, msg, &arena, options) catch {};
+        // Test with all schemas and options
+        try fuzz(input);
 
         ctx.recordEvent();
     }
@@ -61,7 +76,18 @@ pub fn run(args: fuzz.FuzzArgs) !void {
     ctx.finish();
 }
 
-// Test schemas covering various field types and configurations.
+// Native Zig fuzz test entry point for `zig test --fuzz`
+test "fuzz" {
+    try std.testing.fuzz({}, struct {
+        fn testOne(_: void, input: []const u8) !void {
+            try fuzz(input);
+        }
+    }.testOne, .{
+        .corpus = &shared_corpus.protobuf,
+    });
+}
+
+// Test schemas covering various field types and configurations
 
 const empty_fields = [_]MiniTableField{};
 const empty_schema = MiniTable{
@@ -105,7 +131,7 @@ const multi_fields = [_]MiniTableField{
     },
     .{
         .number = 2,
-        .offset = 8, // 8-byte aligned for i64
+        .offset = 8,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_INT64,
@@ -114,7 +140,7 @@ const multi_fields = [_]MiniTableField{
     },
     .{
         .number = 3,
-        .offset = 16, // StringView is 16 bytes, 8-byte aligned
+        .offset = 16,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_STRING,
@@ -246,7 +272,7 @@ const repeated_fields = [_]MiniTableField{
     },
     .{
         .number = 2,
-        .offset = 16,
+        .offset = 24,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_STRING,
@@ -257,7 +283,7 @@ const repeated_fields = [_]MiniTableField{
 const repeated_schema = MiniTable{
     .fields = &repeated_fields,
     .submessages = &.{},
-    .size = 32,
+    .size = 48,
     .hasbit_bytes = 0,
     .oneof_count = 0,
     .dense_below = 2,
@@ -310,7 +336,7 @@ const bool_enum_schema = MiniTable{
     .dense_below = 4,
 };
 
-const test_schemas = [_]*const MiniTable{
+pub const test_schemas = [_]*const MiniTable{
     &empty_schema,
     &int32_schema,
     &multi_schema,
@@ -320,7 +346,7 @@ const test_schemas = [_]*const MiniTable{
     &bool_enum_schema,
 };
 
-test "decode_fuzz: smoke test" {
+test "decode: smoke test" {
     try run(.{
         .seed = 12345,
         .events_max = 100,

@@ -13,7 +13,7 @@ const WireType = types.WireType;
 pub fn ReadResult(comptime T: type) type {
     return struct {
         value: T,
-        consumed: u32,
+        consumed: usize,
     };
 }
 
@@ -49,10 +49,10 @@ pub fn read_varint(bytes: []const u8) ReadError!ReadResult(u64) {
 fn read_varint_slow(bytes: []const u8) ReadError!ReadResult(u64) {
     var value: u64 = 0;
     var shift: u6 = 0;
-    var i: u32 = 0;
+    var i: usize = 0;
 
     // Varint is at most 10 bytes for 64-bit values.
-    const max_bytes: u32 = 10;
+    const max_bytes: usize = 10;
 
     while (i < max_bytes) {
         if (i >= bytes.len) {
@@ -132,18 +132,14 @@ pub fn read_double(bytes: []const u8) ReadError!ReadResult(f64) {
 pub fn read_length_delimited(bytes: []const u8) ReadError!ReadResult([]const u8) {
     const len_result = try read_varint(bytes);
 
-    // Length must fit in u32.
-    if (len_result.value > std.math.maxInt(u32)) {
-        return error.Malformed;
-    }
-
-    const length: u32 = @intCast(len_result.value);
-    const data_start = len_result.consumed;
-    const data_end = data_start + length;
-
-    if (data_end > bytes.len) {
+    // Check that length doesn't overflow when added to data_start.
+    if (len_result.value > bytes.len -| len_result.consumed) {
         return error.EndOfStream;
     }
+
+    const length: usize = @intCast(len_result.value);
+    const data_start = len_result.consumed;
+    const data_end = data_start + length;
 
     const data = bytes[data_start..data_end];
     return .{ .value = data, .consumed = data_end };
@@ -162,7 +158,7 @@ pub fn zigzag_decode_64(value: u64) i64 {
 /// Skip a field based on its wire type.
 ///
 /// Returns the number of bytes to skip.
-pub fn skip_field(bytes: []const u8, wire_type: WireType) ReadError!u32 {
+pub fn skip_field(bytes: []const u8, wire_type: WireType) ReadError!usize {
     switch (wire_type) {
         .varint => {
             const result = try read_varint(bytes);
