@@ -87,6 +87,17 @@ const Response = struct {
     payload: StringView,
 };
 
+// A minimal MiniTable with no fields - all fields are treated as unknown.
+// Used to validate wire format through the decoder without needing a schema.
+const unknown_fields_table = proto.MiniTable{
+    .fields = &.{},
+    .submessages = &.{},
+    .size = 8, // Minimal message size.
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 0,
+};
+
 fn process_request(request_bytes: []const u8, arena: *Arena) Response {
     // Parse ConformanceRequest.
     const request_msg = Message.new(arena, &bootstrap.conformance_request_table) orelse {
@@ -118,9 +129,18 @@ fn process_request(request_bytes: []const u8, arena: *Arena) Response {
         return make_skipped_response("Only protobuf output supported");
     }
 
-    // For binary round-trip test, we just echo the input.
-    // A proper implementation would parse into typed fields and re-serialize.
-    // For now, we do a simple passthrough to verify the basic protocol works.
+    // Decode the payload to validate wire format.
+    // This catches malformed input inline during decoding (upb/TigerBeetle pattern).
+    // We use a minimal "unknown fields only" table to validate wire format without schema.
+    const payload_msg = Message.new(arena, &unknown_fields_table) orelse {
+        return make_error_response(2, "Out of memory");
+    };
+
+    proto.decode(req.protobuf_payload.slice(), payload_msg, arena, .{}) catch |err| {
+        return make_error_response(1, @errorName(err));
+    };
+
+    // For binary round-trip, echo the (now validated) input.
     return .{ .result_case = 3, .payload = req.protobuf_payload };
 }
 

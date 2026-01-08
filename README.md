@@ -56,11 +56,11 @@ zig build
 ### Expected Results
 
 Current implementation status:
-- **811 passing** - Binary round-trip tests
-- **388 failing** - Malformed input validation tests (expected)
+- **1163 passing** (97% of binary tests)
+- **36 failing** - Schema-dependent validation (packed fields, submessages)
 - **1390 skipped** - JSON/text format tests (not implemented)
 
-The failing tests are expected because the conformance runner currently echoes valid binary input without full message parsing. To pass these tests, MiniTables for `TestAllTypesProto3` and other test messages need to be implemented.
+The 36 failing tests require schema knowledge to validate packed field element counts and submessage contents. To pass these, MiniTables for `TestAllTypesProto3` and other test messages would need to be implemented.
 
 ## Usage Example
 

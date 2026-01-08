@@ -6,9 +6,9 @@ A standalone implementation of protobuf's upb library from scratch in Zig v0.15.
 
 **Status: Initial Implementation Complete**
 
-### Conformance Test Results (2026-01-07)
-- **811 passing tests** - Binary round-trip tests
-- **388 failing tests** - Malformed input validation (requires full message schema)
+### Conformance Test Results (2026-01-08)
+- **1163 passing tests** (97% of binary tests)
+- **36 failing tests** - Schema-dependent validation (packed fields, submessages)
 - **1390 skipped tests** - JSON/text format tests (binary-only implementation)
 
 ### Implemented Components
@@ -32,6 +32,13 @@ A standalone implementation of protobuf's upb library from scratch in Zig v0.15.
 3. **No malformed input rejection** - Requires TestAllTypesProto3 MiniTable to validate
 
 ## Changelog
+
+### 2026-01-08 - Inline Validation (upb/TigerBeetle pattern)
+- Removed separate `validate_wire_format()` function
+- Conformance runner now validates by decoding with empty schema (all fields unknown)
+- Validation happens inline during decoding, matching upb and TigerBeetle patterns
+- Improved conformance results from 811 to 1163 passing tests (97%)
+- Remaining 36 failures require schema knowledge (packed fields, submessages)
 
 ### 2026-01-07 - Initial Implementation
 - Set up project structure with `build.zig` and `build.zig.zon`
