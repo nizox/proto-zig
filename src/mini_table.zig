@@ -58,6 +58,14 @@ pub const FieldType = enum(u8) {
     pub fn is_scalar(self: FieldType) bool {
         return self != .TYPE_MESSAGE and self != .TYPE_GROUP;
     }
+
+    /// Returns true if this type can be packed (repeated primitive fields).
+    pub fn is_packable(self: FieldType) bool {
+        return switch (self) {
+            .TYPE_STRING, .TYPE_BYTES, .TYPE_MESSAGE, .TYPE_GROUP => false,
+            else => true,
+        };
+    }
 };
 
 /// Field cardinality mode.

@@ -1,7 +1,10 @@
-//! Bootstrap descriptors for conformance testing.
+//! Bootstrap MiniTables for descriptor.proto.
 //!
-//! Hand-coded MiniTables for ConformanceRequest, ConformanceResponse, and
-//! related types needed to run conformance tests.
+//! Hand-coded MiniTables for FileDescriptorSet, FileDescriptorProto,
+//! DescriptorProto, and related types needed to parse binary protobuf descriptors.
+//!
+//! These tables solve the bootstrap problem: we need descriptor tables to parse
+//! descriptors, so we hand-code them here.
 
 const std = @import("std");
 const MiniTable = @import("../mini_table.zig").MiniTable;
@@ -12,289 +15,281 @@ const StringView = @import("../message.zig").StringView;
 const RepeatedField = @import("../message.zig").RepeatedField;
 const Message = @import("../message.zig").Message;
 
-// Wire format enum values.
-pub const WireFormat = enum(i32) {
-    UNSPECIFIED = 0,
-    PROTOBUF = 1,
-    JSON = 2,
-    JSPB = 3,
-    TEXT_FORMAT = 4,
+//
+// Descriptor MiniTables (for parsing FileDescriptorSet)
+//
+
+// google.protobuf.FieldDescriptorProto
+// Only includes fields needed for building MiniTables.
+pub const FieldDescriptorProto = struct {
+    name: StringView = StringView.empty(), // Field 1
+    number: i32 = 0, // Field 3
+    label: i32 = 0, // Field 4 (enum Label)
+    type: i32 = 0, // Field 5 (enum Type)
+    type_name: StringView = StringView.empty(), // Field 6
+    oneof_index: i32 = 0, // Field 9
 };
 
-// Test category enum values.
-pub const TestCategory = enum(i32) {
-    UNSPECIFIED_TEST = 0,
-    BINARY_TEST = 1,
-    JSON_TEST = 2,
-    JSON_IGNORE_UNKNOWN_PARSING_TEST = 3,
-    JSPB_TEST = 4,
-    TEXT_FORMAT_TEST = 5,
-};
-
-// ConformanceRequest message layout.
-// Using extern struct to guarantee field ordering matches our expectations.
-pub const ConformanceRequest = extern struct {
-    // Oneof payload case (0 = none, 1 = protobuf, 2 = json, 7 = jspb, 8 = text).
-    payload_case: u32 = 0,
-    // Padding for alignment.
-    _pad0: u32 = 0,
-    // Payload union (only one is valid based on payload_case).
-    protobuf_payload: StringView = StringView.empty(), // Field 1.
-    json_payload: StringView = StringView.empty(), // Field 2.
-    jspb_payload: StringView = StringView.empty(), // Field 7.
-    text_payload: StringView = StringView.empty(), // Field 8.
-    // Other fields.
-    requested_output_format: i32 = 0, // Field 3, enum WireFormat.
-    test_category: i32 = 0, // Field 5, enum TestCategory.
-    message_type: StringView = StringView.empty(), // Field 4.
-    print_unknown_fields: bool = false, // Field 9.
-
-    pub const payload_case_offset = @offsetOf(ConformanceRequest, "payload_case");
-    pub const protobuf_payload_offset = @offsetOf(ConformanceRequest, "protobuf_payload");
-    pub const json_payload_offset = @offsetOf(ConformanceRequest, "json_payload");
-    pub const jspb_payload_offset = @offsetOf(ConformanceRequest, "jspb_payload");
-    pub const text_payload_offset = @offsetOf(ConformanceRequest, "text_payload");
-    pub const requested_output_format_offset = @offsetOf(ConformanceRequest, "requested_output_format");
-    pub const test_category_offset = @offsetOf(ConformanceRequest, "test_category");
-    pub const message_type_offset = @offsetOf(ConformanceRequest, "message_type");
-    pub const print_unknown_fields_offset = @offsetOf(ConformanceRequest, "print_unknown_fields");
-};
-
-// ConformanceResponse message layout.
-pub const ConformanceResponse = struct {
-    // Oneof result case.
-    result_case: u32 = 0,
-    _pad0: u32 = 0,
-    // Result union fields.
-    parse_error: StringView = StringView.empty(), // Field 1.
-    runtime_error: StringView = StringView.empty(), // Field 2.
-    protobuf_payload: StringView = StringView.empty(), // Field 3.
-    json_payload: StringView = StringView.empty(), // Field 4.
-    skipped: StringView = StringView.empty(), // Field 5.
-    serialize_error: StringView = StringView.empty(), // Field 6.
-    jspb_payload: StringView = StringView.empty(), // Field 7.
-    text_payload: StringView = StringView.empty(), // Field 8.
-    timeout_error: StringView = StringView.empty(), // Field 9.
-
-    pub const result_case_offset = @offsetOf(ConformanceResponse, "result_case");
-};
-
-// MiniTable for ConformanceRequest.
-pub const conformance_request_fields = [_]MiniTableField{
-    // Field 1: protobuf_payload (bytes), oneof payload.
+pub const field_descriptor_proto_fields = [_]MiniTableField{
+    // Field 1: name (string)
     .{
         .number = 1,
-        .offset = ConformanceRequest.protobuf_payload_offset,
-        .presence = -1, // Oneof index 0.
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_BYTES,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 2: json_payload (string), oneof payload.
-    .{
-        .number = 2,
-        .offset = ConformanceRequest.json_payload_offset,
-        .presence = -1,
+        .offset = @offsetOf(FieldDescriptorProto, "name"),
+        .presence = 0, // Proto3 implicit presence
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = true,
+        .is_oneof = false,
     },
-    // Field 3: requested_output_format (enum).
+    // Field 3: number (int32)
     .{
         .number = 3,
-        .offset = ConformanceRequest.requested_output_format_offset,
+        .offset = @offsetOf(FieldDescriptorProto, "number"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT32,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 4: label (enum, int32)
+    .{
+        .number = 4,
+        .offset = @offsetOf(FieldDescriptorProto, "label"),
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_ENUM,
         .mode = .scalar,
         .is_packed = false,
+        .is_oneof = false,
     },
-    // Field 4: message_type (string).
-    .{
-        .number = 4,
-        .offset = ConformanceRequest.message_type_offset,
-        .presence = 0,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-    },
-    // Field 5: test_category (enum).
+    // Field 5: type (enum, int32)
     .{
         .number = 5,
-        .offset = ConformanceRequest.test_category_offset,
+        .offset = @offsetOf(FieldDescriptorProto, "type"),
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_ENUM,
         .mode = .scalar,
         .is_packed = false,
+        .is_oneof = false,
     },
-    // Field 7: jspb_payload (string), oneof payload.
-    .{
-        .number = 7,
-        .offset = ConformanceRequest.jspb_payload_offset,
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 8: text_payload (string), oneof payload.
-    .{
-        .number = 8,
-        .offset = ConformanceRequest.text_payload_offset,
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 9: print_unknown_fields (bool).
-    .{
-        .number = 9,
-        .offset = ConformanceRequest.print_unknown_fields_offset,
-        .presence = 0,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_BOOL,
-        .mode = .scalar,
-        .is_packed = false,
-    },
-};
-
-pub const conformance_request_table = MiniTable{
-    .fields = &conformance_request_fields,
-    .submessages = &.{},
-    .size = @sizeOf(ConformanceRequest),
-    .hasbit_bytes = 0,
-    .oneof_count = 1,
-    .dense_below = 5,
-};
-
-// MiniTable for ConformanceResponse.
-pub const conformance_response_fields = [_]MiniTableField{
-    // Field 1: parse_error (string), oneof result.
-    .{
-        .number = 1,
-        .offset = @offsetOf(ConformanceResponse, "parse_error"),
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 2: runtime_error (string), oneof result.
-    .{
-        .number = 2,
-        .offset = @offsetOf(ConformanceResponse, "runtime_error"),
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 3: protobuf_payload (bytes), oneof result.
-    .{
-        .number = 3,
-        .offset = @offsetOf(ConformanceResponse, "protobuf_payload"),
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_BYTES,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 4: json_payload (string), oneof result.
-    .{
-        .number = 4,
-        .offset = @offsetOf(ConformanceResponse, "json_payload"),
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 5: skipped (string), oneof result.
-    .{
-        .number = 5,
-        .offset = @offsetOf(ConformanceResponse, "skipped"),
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 6: serialize_error (string), oneof result.
+    // Field 6: type_name (string)
     .{
         .number = 6,
-        .offset = @offsetOf(ConformanceResponse, "serialize_error"),
-        .presence = -1,
+        .offset = @offsetOf(FieldDescriptorProto, "type_name"),
+        .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = true,
+        .is_oneof = false,
     },
-    // Field 7: jspb_payload (string), oneof result.
-    .{
-        .number = 7,
-        .offset = @offsetOf(ConformanceResponse, "jspb_payload"),
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 8: text_payload (string), oneof result.
-    .{
-        .number = 8,
-        .offset = @offsetOf(ConformanceResponse, "text_payload"),
-        .presence = -1,
-        .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
-        .mode = .scalar,
-        .is_packed = false,
-        .is_oneof = true,
-    },
-    // Field 9: timeout_error (string), oneof result.
+    // Field 9: oneof_index (int32)
     .{
         .number = 9,
-        .offset = @offsetOf(ConformanceResponse, "timeout_error"),
-        .presence = -1,
+        .offset = @offsetOf(FieldDescriptorProto, "oneof_index"),
+        .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
-        .field_type = .TYPE_STRING,
+        .field_type = .TYPE_INT32,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = true,
+        .is_oneof = false,
     },
 };
 
-pub const conformance_response_table = MiniTable{
-    .fields = &conformance_response_fields,
+pub const field_descriptor_proto_table = MiniTable{
+    .fields = &field_descriptor_proto_fields,
     .submessages = &.{},
-    .size = @sizeOf(ConformanceResponse),
+    .size = @sizeOf(FieldDescriptorProto),
     .hasbit_bytes = 0,
-    .oneof_count = 1,
+    .oneof_count = 0,
     .dense_below = 6,
 };
 
-test "ConformanceRequest layout" {
-    // Verify struct sizes and alignment.
-    const req_size = @sizeOf(ConformanceRequest);
-    std.debug.assert(req_size == conformance_request_table.size);
-}
+// google.protobuf.OneofDescriptorProto
+pub const OneofDescriptorProto = struct {
+    name: StringView = StringView.empty(), // Field 1
+};
 
-test "ConformanceResponse layout" {
-    const resp_size = @sizeOf(ConformanceResponse);
-    std.debug.assert(resp_size == conformance_response_table.size);
-}
+pub const oneof_descriptor_proto_fields = [_]MiniTableField{
+    // Field 1: name (string)
+    .{
+        .number = 1,
+        .offset = @offsetOf(OneofDescriptorProto, "name"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+pub const oneof_descriptor_proto_table = MiniTable{
+    .fields = &oneof_descriptor_proto_fields,
+    .submessages = &.{},
+    .size = @sizeOf(OneofDescriptorProto),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 1,
+};
+
+// google.protobuf.DescriptorProto
+pub const DescriptorProto = struct {
+    name: StringView = StringView.empty(), // Field 1
+    field: ?*RepeatedField = null, // Field 2, repeated FieldDescriptorProto
+    nested_type: ?*RepeatedField = null, // Field 3, repeated DescriptorProto
+    oneof_decl: ?*RepeatedField = null, // Field 8, repeated OneofDescriptorProto
+};
+
+pub const descriptor_proto_fields = [_]MiniTableField{
+    // Field 1: name (string)
+    .{
+        .number = 1,
+        .offset = @offsetOf(DescriptorProto, "name"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 2: field (repeated FieldDescriptorProto)
+    .{
+        .number = 2,
+        .offset = @offsetOf(DescriptorProto, "field"),
+        .presence = 0,
+        .submsg_index = 0, // Index into submessages array
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 3: nested_type (repeated DescriptorProto)
+    .{
+        .number = 3,
+        .offset = @offsetOf(DescriptorProto, "nested_type"),
+        .presence = 0,
+        .submsg_index = 1, // Index into submessages array
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 8: oneof_decl (repeated OneofDescriptorProto)
+    .{
+        .number = 8,
+        .offset = @offsetOf(DescriptorProto, "oneof_decl"),
+        .presence = 0,
+        .submsg_index = 2, // Index into submessages array
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+// Note: This is a var so we can set up the self-reference for nested_type.
+// The submessages array has: [0]=FieldDescriptorProto, [1]=DescriptorProto (self), [2]=OneofDescriptorProto
+pub var descriptor_proto_table: MiniTable = .{
+    .fields = &descriptor_proto_fields,
+    .submessages = &[_]*const MiniTable{
+        &field_descriptor_proto_table,
+        &descriptor_proto_table, // Self-reference (initialized at runtime on first use)
+        &oneof_descriptor_proto_table,
+    },
+    .size = @sizeOf(DescriptorProto),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 3,
+};
+
+// google.protobuf.FileDescriptorProto
+pub const FileDescriptorProto = struct {
+    name: StringView = StringView.empty(), // Field 1
+    package: StringView = StringView.empty(), // Field 2
+    message_type: ?*RepeatedField = null, // Field 4, repeated DescriptorProto
+};
+
+pub const file_descriptor_proto_fields = [_]MiniTableField{
+    // Field 1: name (string)
+    .{
+        .number = 1,
+        .offset = @offsetOf(FileDescriptorProto, "name"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 2: package (string)
+    .{
+        .number = 2,
+        .offset = @offsetOf(FileDescriptorProto, "package"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 4: message_type (repeated DescriptorProto)
+    .{
+        .number = 4,
+        .offset = @offsetOf(FileDescriptorProto, "message_type"),
+        .presence = 0,
+        .submsg_index = 0, // Index into submessages array
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+pub const file_descriptor_proto_submessages = [_]*const MiniTable{
+    &descriptor_proto_table,
+};
+
+pub const file_descriptor_proto_table = MiniTable{
+    .fields = &file_descriptor_proto_fields,
+    .submessages = &file_descriptor_proto_submessages,
+    .size = @sizeOf(FileDescriptorProto),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 4,
+};
+
+// google.protobuf.FileDescriptorSet
+pub const FileDescriptorSet = struct {
+    file: ?*RepeatedField = null, // Field 1, repeated FileDescriptorProto
+};
+
+pub const file_descriptor_set_fields = [_]MiniTableField{
+    // Field 1: file (repeated FileDescriptorProto)
+    .{
+        .number = 1,
+        .offset = @offsetOf(FileDescriptorSet, "file"),
+        .presence = 0,
+        .submsg_index = 0,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+pub const file_descriptor_set_submessages = [_]*const MiniTable{
+    &file_descriptor_proto_table,
+};
+
+pub const file_descriptor_set_table = MiniTable{
+    .fields = &file_descriptor_set_fields,
+    .submessages = &file_descriptor_set_submessages,
+    .size = @sizeOf(FileDescriptorSet),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 1,
+};

@@ -23,6 +23,7 @@ pub const StringView = @import("message.zig").StringView;
 pub const RepeatedField = @import("message.zig").RepeatedField;
 
 pub const bootstrap = @import("descriptor/bootstrap.zig");
+pub const descriptor = @import("descriptor/decode.zig");
 
 pub const decode = wire.decode.decode;
 pub const encode = wire.encode.encode;
@@ -31,10 +32,15 @@ pub const EncodeError = wire.encode.EncodeError;
 pub const DecodeOptions = wire.decode.DecodeOptions;
 pub const EncodeOptions = wire.encode.EncodeOptions;
 
+// Descriptor parsing
+pub const parse_file_descriptor_set = descriptor.parse_file_descriptor_set;
+pub const SymbolTable = descriptor.SymbolTable;
+
 test {
     _ = @import("arena.zig");
     _ = @import("wire/wire.zig");
     _ = @import("mini_table.zig");
     _ = @import("message.zig");
     _ = @import("descriptor/bootstrap.zig");
+    _ = @import("descriptor/decode.zig");
 }

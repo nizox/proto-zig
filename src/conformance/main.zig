@@ -13,7 +13,7 @@ const proto = @import("proto");
 const Arena = proto.Arena;
 const Message = proto.Message;
 const StringView = proto.StringView;
-const bootstrap = proto.bootstrap;
+const conformance = @import("tables.zig");
 
 fn getStdin() std.fs.File {
     return std.fs.File.stdin();
@@ -100,7 +100,7 @@ const unknown_fields_table = proto.MiniTable{
 
 fn process_request(request_bytes: []const u8, arena: *Arena) Response {
     // Parse ConformanceRequest.
-    const request_msg = Message.new(arena, &bootstrap.conformance_request_table) orelse {
+    const request_msg = Message.new(arena, &conformance.conformance_request_table) orelse {
         return make_error_response(5, "Out of memory allocating request");
     };
 
@@ -158,19 +158,19 @@ fn get_request_fields(msg: *Message) RequestFields {
     const payload_case = case_ptr.*;
 
     // Read protobuf_payload.
-    const proto_offset = bootstrap.ConformanceRequest.protobuf_payload_offset;
+    const proto_offset = conformance.ConformanceRequest.protobuf_payload_offset;
     const proto_ptr: *const StringView = @ptrCast(@alignCast(msg.data.ptr + proto_offset));
 
     // Read message_type.
-    const mt_offset = bootstrap.ConformanceRequest.message_type_offset;
+    const mt_offset = conformance.ConformanceRequest.message_type_offset;
     const mt_ptr: *const StringView = @ptrCast(@alignCast(msg.data.ptr + mt_offset));
 
     // Read requested_output_format.
-    const format_offset = bootstrap.ConformanceRequest.requested_output_format_offset;
+    const format_offset = conformance.ConformanceRequest.requested_output_format_offset;
     const format_ptr: *const i32 = @ptrCast(@alignCast(msg.data.ptr + format_offset));
 
     // Read test_category.
-    const cat_offset = bootstrap.ConformanceRequest.test_category_offset;
+    const cat_offset = conformance.ConformanceRequest.test_category_offset;
     const cat_ptr: *const i32 = @ptrCast(@alignCast(msg.data.ptr + cat_offset));
 
     return .{
