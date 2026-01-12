@@ -139,9 +139,9 @@ pub const oneof_descriptor_proto_table = MiniTable{
 // google.protobuf.DescriptorProto
 pub const DescriptorProto = struct {
     name: StringView = StringView.empty(), // Field 1
-    field: ?*RepeatedField = null, // Field 2, repeated FieldDescriptorProto
-    nested_type: ?*RepeatedField = null, // Field 3, repeated DescriptorProto
-    oneof_decl: ?*RepeatedField = null, // Field 8, repeated OneofDescriptorProto
+    field: RepeatedField = RepeatedField.empty(0), // Field 2, repeated FieldDescriptorProto
+    nested_type: RepeatedField = RepeatedField.empty(0), // Field 3, repeated DescriptorProto
+    oneof_decl: RepeatedField = RepeatedField.empty(0), // Field 8, repeated OneofDescriptorProto
 };
 
 pub const descriptor_proto_fields = [_]MiniTableField{
@@ -206,11 +206,97 @@ pub var descriptor_proto_table: MiniTable = .{
     .dense_below = 3,
 };
 
+// google.protobuf.EnumValueDescriptorProto
+pub const EnumValueDescriptorProto = struct {
+    name: StringView = StringView.empty(), // Field 1
+    number: i32 = 0, // Field 2
+};
+
+pub const enum_value_descriptor_proto_fields = [_]MiniTableField{
+    // Field 1: name (string)
+    .{
+        .number = 1,
+        .offset = @offsetOf(EnumValueDescriptorProto, "name"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 2: number (int32)
+    .{
+        .number = 2,
+        .offset = @offsetOf(EnumValueDescriptorProto, "number"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT32,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+pub const enum_value_descriptor_proto_table = MiniTable{
+    .fields = &enum_value_descriptor_proto_fields,
+    .submessages = &.{},
+    .size = @sizeOf(EnumValueDescriptorProto),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 2,
+};
+
+// google.protobuf.EnumDescriptorProto
+pub const EnumDescriptorProto = struct {
+    name: StringView = StringView.empty(), // Field 1
+    value: RepeatedField = RepeatedField.empty(0), // Field 2, repeated EnumValueDescriptorProto
+};
+
+pub const enum_descriptor_proto_fields = [_]MiniTableField{
+    // Field 1: name (string)
+    .{
+        .number = 1,
+        .offset = @offsetOf(EnumDescriptorProto, "name"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 2: value (repeated EnumValueDescriptorProto)
+    .{
+        .number = 2,
+        .offset = @offsetOf(EnumDescriptorProto, "value"),
+        .presence = 0,
+        .submsg_index = 0,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+pub const enum_descriptor_proto_submessages = [_]*const MiniTable{
+    &enum_value_descriptor_proto_table,
+};
+
+pub const enum_descriptor_proto_table = MiniTable{
+    .fields = &enum_descriptor_proto_fields,
+    .submessages = &enum_descriptor_proto_submessages,
+    .size = @sizeOf(EnumDescriptorProto),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 2,
+};
+
 // google.protobuf.FileDescriptorProto
 pub const FileDescriptorProto = struct {
     name: StringView = StringView.empty(), // Field 1
     package: StringView = StringView.empty(), // Field 2
-    message_type: ?*RepeatedField = null, // Field 4, repeated DescriptorProto
+    dependency: RepeatedField = RepeatedField.empty(0), // Field 3, repeated string
+    message_type: RepeatedField = RepeatedField.empty(0), // Field 4, repeated DescriptorProto
+    enum_type: RepeatedField = RepeatedField.empty(0), // Field 5, repeated EnumDescriptorProto
 };
 
 pub const file_descriptor_proto_fields = [_]MiniTableField{
@@ -236,6 +322,17 @@ pub const file_descriptor_proto_fields = [_]MiniTableField{
         .is_packed = false,
         .is_oneof = false,
     },
+    // Field 3: dependency (repeated string)
+    .{
+        .number = 3,
+        .offset = @offsetOf(FileDescriptorProto, "dependency"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
     // Field 4: message_type (repeated DescriptorProto)
     .{
         .number = 4,
@@ -247,10 +344,22 @@ pub const file_descriptor_proto_fields = [_]MiniTableField{
         .is_packed = false,
         .is_oneof = false,
     },
+    // Field 5: enum_type (repeated EnumDescriptorProto)
+    .{
+        .number = 5,
+        .offset = @offsetOf(FileDescriptorProto, "enum_type"),
+        .presence = 0,
+        .submsg_index = 1, // Index into submessages array
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
 };
 
 pub const file_descriptor_proto_submessages = [_]*const MiniTable{
     &descriptor_proto_table,
+    &enum_descriptor_proto_table,
 };
 
 pub const file_descriptor_proto_table = MiniTable{
@@ -259,12 +368,12 @@ pub const file_descriptor_proto_table = MiniTable{
     .size = @sizeOf(FileDescriptorProto),
     .hasbit_bytes = 0,
     .oneof_count = 0,
-    .dense_below = 4,
+    .dense_below = 5,
 };
 
 // google.protobuf.FileDescriptorSet
 pub const FileDescriptorSet = struct {
-    file: ?*RepeatedField = null, // Field 1, repeated FileDescriptorProto
+    file: RepeatedField = RepeatedField.empty(0), // Field 1, repeated FileDescriptorProto
 };
 
 pub const file_descriptor_set_fields = [_]MiniTableField{
@@ -289,6 +398,150 @@ pub const file_descriptor_set_table = MiniTable{
     .fields = &file_descriptor_set_fields,
     .submessages = &file_descriptor_set_submessages,
     .size = @sizeOf(FileDescriptorSet),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 1,
+};
+
+//
+// Plugin Protocol MiniTables (for protoc plugin)
+//
+
+// google.protobuf.compiler.CodeGeneratorRequest
+pub const CodeGeneratorRequest = struct {
+    file_to_generate: RepeatedField = RepeatedField.empty(0), // Field 1, repeated string
+    parameter: StringView = StringView.empty(), // Field 2
+    proto_file: RepeatedField = RepeatedField.empty(0), // Field 15, repeated FileDescriptorProto
+};
+
+pub const code_generator_request_fields = [_]MiniTableField{
+    // Field 1: file_to_generate (repeated string)
+    .{
+        .number = 1,
+        .offset = @offsetOf(CodeGeneratorRequest, "file_to_generate"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 2: parameter (string)
+    .{
+        .number = 2,
+        .offset = @offsetOf(CodeGeneratorRequest, "parameter"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 15: proto_file (repeated FileDescriptorProto)
+    .{
+        .number = 15,
+        .offset = @offsetOf(CodeGeneratorRequest, "proto_file"),
+        .presence = 0,
+        .submsg_index = 0,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+pub const code_generator_request_submessages = [_]*const MiniTable{
+    &file_descriptor_proto_table,
+};
+
+pub const code_generator_request_table = MiniTable{
+    .fields = &code_generator_request_fields,
+    .submessages = &code_generator_request_submessages,
+    .size = @sizeOf(CodeGeneratorRequest),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 2,
+};
+
+// google.protobuf.compiler.CodeGeneratorResponse.File
+pub const CodeGeneratorResponseFile = struct {
+    name: StringView = StringView.empty(), // Field 1
+    content: StringView = StringView.empty(), // Field 15
+};
+
+pub const code_generator_response_file_fields = [_]MiniTableField{
+    // Field 1: name (string)
+    .{
+        .number = 1,
+        .offset = @offsetOf(CodeGeneratorResponseFile, "name"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 15: content (string)
+    .{
+        .number = 15,
+        .offset = @offsetOf(CodeGeneratorResponseFile, "content"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+pub const code_generator_response_file_table = MiniTable{
+    .fields = &code_generator_response_file_fields,
+    .submessages = &.{},
+    .size = @sizeOf(CodeGeneratorResponseFile),
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 1,
+};
+
+// google.protobuf.compiler.CodeGeneratorResponse
+pub const CodeGeneratorResponse = struct {
+    error_message: StringView = StringView.empty(), // Field 1
+    file: RepeatedField = RepeatedField.empty(0), // Field 15, repeated File
+};
+
+pub const code_generator_response_fields = [_]MiniTableField{
+    // Field 1: error (string)
+    .{
+        .number = 1,
+        .offset = @offsetOf(CodeGeneratorResponse, "error_message"),
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+    // Field 15: file (repeated File)
+    .{
+        .number = 15,
+        .offset = @offsetOf(CodeGeneratorResponse, "file"),
+        .presence = 0,
+        .submsg_index = 0,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+        .is_oneof = false,
+    },
+};
+
+pub const code_generator_response_submessages = [_]*const MiniTable{
+    &code_generator_response_file_table,
+};
+
+pub const code_generator_response_table = MiniTable{
+    .fields = &code_generator_response_fields,
+    .submessages = &code_generator_response_submessages,
+    .size = @sizeOf(CodeGeneratorResponse),
     .hasbit_bytes = 0,
     .oneof_count = 0,
     .dense_below = 1,

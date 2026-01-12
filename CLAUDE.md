@@ -16,7 +16,7 @@ This repository uses jj (Jujutsu) for version control, not git. Use `jj` command
 # Build library and conformance runner
 zig build
 
-# Run unit tests (includes proto tests and fuzz infrastructure tests)
+# Run unit tests (includes proto tests, codegen tests, and fuzz infrastructure tests)
 zig build test
 
 # Check if code compiles without full build
@@ -27,6 +27,35 @@ zig build
 # Then run with protobuf test suite:
 # /path/to/protobuf/bazel-bin/conformance/conformance_test_runner ./zig-out/bin/conformance_zig
 ```
+
+## Code Generation (protoc-gen-zig-pb)
+
+proto-zig includes a protoc plugin for generating Zig MiniTable definitions from .proto files.
+
+```bash
+# Generate MiniTables from .proto files (uses system protoc)
+zig build update-proto
+
+# Use custom protoc binary
+zig build update-proto -Dprotoc=/path/to/protoc
+
+# Use custom protobuf source directory
+zig build update-proto -Dprotobuf-src=/path/to/protobuf
+
+# Run code generation integration tests
+zig build test-codegen-integration
+```
+
+**Generated Files:**
+- `descriptor.proto` → `src/generated/descriptor.pb.zig`
+- `plugin.proto` → `src/generated/plugin.pb.zig`
+- `conformance.proto` → `src/generated/conformance.pb.zig`
+
+**Generated Code Features:**
+- Clean, idiomatic Zig code with MiniTable definitions
+- Support for enums, nested messages, repeated fields
+- Self-referencing messages use `pub var` for circular references
+- Depth-first ordering for proper initialization
 
 ## Fuzzing
 

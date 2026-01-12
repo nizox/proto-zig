@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package test;
+
+// Simple test message for code generation
+message TestMessage {
+  int32 id = 1;
+  string name = 2;
+  bool active = 3;
+}
+
+// Message with nested message
+message Parent {
+  int32 value = 1;
+  Child child = 2;
+
+  message Child {
+    string data = 1;
+  }
+}
+
+// Message with repeated fields
+message Container {
+  repeated int32 numbers = 1;
+  repeated string tags = 2;
+}
+
+// Enum type
+enum Status {
+  UNKNOWN = 0;
+  ACTIVE = 1;
+  INACTIVE = 2;
+}
+
+// Message using enum
+message Record {
+  int32 id = 1;
+  Status status = 2;
+}

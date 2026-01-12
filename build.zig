@@ -5,6 +5,10 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Build options for protoc integration
+    const protoc_path = b.option([]const u8, "protoc", "Path to protoc binary") orelse "protoc";
+    const protobuf_src = b.option([]const u8, "protobuf-src", "Path to protobuf source directory") orelse "/home/bits/gh/google/protobuf";
+
     // Main library module.
     const proto_module = b.createModule(.{
         .root_source_file = b.path("src/proto.zig"),
@@ -12,14 +16,20 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // Generated conformance tables module.
+    const conformance_generated_module = b.createModule(.{
+        .root_source_file = b.path("src/generated/conformance.pb.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "proto", .module = proto_module },
+        },
+    });
+
     // Unit tests.
     const unit_tests = b.addTest(.{
         .name = "test-proto",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/proto.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
+        .root_module = proto_module,
     });
     const run_unit_tests = b.addRunArtifact(unit_tests);
     const test_step = b.step("test", "Run unit tests");
@@ -34,6 +44,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "proto", .module = proto_module },
+                .{ .name = "conformance", .module = conformance_generated_module },
             },
         }),
     });
@@ -78,7 +89,129 @@ pub fn build(b: *std.Build) void {
     const run_fuzz_tests = b.addRunArtifact(fuzz_unit_tests);
     test_step.dependOn(&run_fuzz_tests.step);
 
-    // Check step for fast compilation checking.
+    // Codegen tests
+    const codegen_module = b.createModule(.{
+        .root_source_file = b.path("src/codegen/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "proto", .module = proto_module },
+        },
+    });
+    const codegen_test = b.addTest(.{
+        .name = "test-codegen",
+        .root_module = codegen_module,
+    });
+    test_step.dependOn(&b.addRunArtifact(codegen_test).step);
+
+    const plugin_exe = b.addExecutable(.{
+        .name = "protoc-gen-zig-pb",
+        .root_module = codegen_module,
+    });
+    b.installArtifact(plugin_exe);
+
+    // ========================================================================
+    // Update Proto Step (Code Generation)
+    // ========================================================================
+    //
+    // Regenerates .proto MiniTables using protoc-gen-zig-pb plugin.
+    // Requires: protoc and protobuf source at /home/bits/gh/google/protobuf/
+    // Usage: zig build update-proto
+    //
+    const update_proto_step = b.step("update-proto", "Regenerate .proto MiniTables");
+    const install_plugin = b.addInstallArtifact(plugin_exe, .{});
+    update_proto_step.dependOn(&install_plugin.step);
+
+    // Generate descriptor.proto -> src/generated/descriptor.pb.zig
+    const descriptor_proto_path = b.fmt("{s}/src/google/protobuf/descriptor.proto", .{protobuf_src});
+    const gen_descriptor = b.addSystemCommand(&.{
+        protoc_path,
+        b.fmt("--plugin=protoc-gen-zig-pb={s}", .{b.getInstallPath(.bin, "protoc-gen-zig-pb")}),
+        "--zig-pb_out=src/generated",
+        b.fmt("-I{s}/src", .{protobuf_src}),
+        descriptor_proto_path,
+    });
+    gen_descriptor.step.dependOn(&install_plugin.step);
+    update_proto_step.dependOn(&gen_descriptor.step);
+
+    // Generate plugin.proto -> src/generated/plugin.pb.zig
+    const plugin_proto_path = b.fmt("{s}/src/google/protobuf/compiler/plugin.proto", .{protobuf_src});
+    const gen_plugin = b.addSystemCommand(&.{
+        protoc_path,
+        b.fmt("--plugin=protoc-gen-zig-pb={s}", .{b.getInstallPath(.bin, "protoc-gen-zig-pb")}),
+        "--zig-pb_out=src/generated",
+        b.fmt("-I{s}/src", .{protobuf_src}),
+        plugin_proto_path,
+    });
+    gen_plugin.step.dependOn(&install_plugin.step);
+    update_proto_step.dependOn(&gen_plugin.step);
+
+    // Generate conformance.proto -> src/generated/conformance.pb.zig
+    const conformance_proto_path = b.fmt("{s}/conformance/conformance.proto", .{protobuf_src});
+    const gen_conformance = b.addSystemCommand(&.{
+        protoc_path,
+        b.fmt("--plugin=protoc-gen-zig-pb={s}", .{b.getInstallPath(.bin, "protoc-gen-zig-pb")}),
+        "--zig-pb_out=src/generated",
+        b.fmt("-I{s}/conformance", .{protobuf_src}),
+        b.fmt("-I{s}/src", .{protobuf_src}),
+        conformance_proto_path,
+    });
+    gen_conformance.step.dependOn(&install_plugin.step);
+    update_proto_step.dependOn(&gen_conformance.step);
+
+    // ========================================================================
+    // Code Generation Integration Tests
+    // ========================================================================
+
+    const codegen_test_step = b.step("test-codegen-integration", "Generate and test code from test .proto files");
+    codegen_test_step.dependOn(&install_plugin.step);
+
+    // Generate test/protos/test_message.proto -> test/generated/test_message.pb.zig
+    const test_proto_path = "test/protos/test_message.proto";
+    const gen_test = b.addSystemCommand(&.{
+        protoc_path,
+        b.fmt("--plugin=protoc-gen-zig-pb={s}", .{b.getInstallPath(.bin, "protoc-gen-zig-pb")}),
+        "--zig-pb_out=test/generated",
+        "-Itest/protos",
+        test_proto_path,
+    });
+    gen_test.step.dependOn(&install_plugin.step);
+    codegen_test_step.dependOn(&gen_test.step);
+
+    // Test that generated code compiles and works
+    const codegen_integration_test = b.addTest(.{
+        .name = "test-codegen-integration-run",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/codegen_integration_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "proto", .module = proto_module },
+            },
+        }),
+    });
+    codegen_integration_test.step.dependOn(&gen_test.step);
+    const run_codegen_test = b.addRunArtifact(codegen_integration_test);
+    codegen_test_step.dependOn(&run_codegen_test.step);
+
+    // Add to main test step (optional - only run if generated files exist)
+    const codegen_integration_test_optional = b.addTest(.{
+        .name = "test-codegen-integration-optional",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/codegen_integration_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "proto", .module = proto_module },
+            },
+        }),
+    });
+    test_step.dependOn(&b.addRunArtifact(codegen_integration_test_optional).step);
+
+    // ========================================================================
+    // Build Checks
+    // ========================================================================
+
     const check_step = b.step("check", "Check if proto-zig compiles");
     check_step.dependOn(&unit_tests.step);
 

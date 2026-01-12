@@ -13,7 +13,7 @@ const proto = @import("proto");
 const Arena = proto.Arena;
 const Message = proto.Message;
 const StringView = proto.StringView;
-const conformance = @import("tables.zig");
+const conformance = @import("conformance");
 
 fn getStdin() std.fs.File {
     return std.fs.File.stdin();
@@ -153,25 +153,25 @@ const RequestFields = struct {
 };
 
 fn get_request_fields(msg: *Message) RequestFields {
-    // Read oneof case from message data.
+    // Read oneof case from message data (always at offset 0).
     const case_ptr: *const u32 = @ptrCast(@alignCast(msg.data.ptr));
     const payload_case = case_ptr.*;
 
-    // Read protobuf_payload.
-    const proto_offset = conformance.ConformanceRequest.protobuf_payload_offset;
-    const proto_ptr: *const StringView = @ptrCast(@alignCast(msg.data.ptr + proto_offset));
+    // Read protobuf_payload (field 1).
+    const proto_field = msg.table.field_by_number(1).?;
+    const proto_ptr: *const StringView = @ptrCast(@alignCast(msg.data.ptr + proto_field.offset));
 
-    // Read message_type.
-    const mt_offset = conformance.ConformanceRequest.message_type_offset;
-    const mt_ptr: *const StringView = @ptrCast(@alignCast(msg.data.ptr + mt_offset));
+    // Read message_type (field 4).
+    const mt_field = msg.table.field_by_number(4).?;
+    const mt_ptr: *const StringView = @ptrCast(@alignCast(msg.data.ptr + mt_field.offset));
 
-    // Read requested_output_format.
-    const format_offset = conformance.ConformanceRequest.requested_output_format_offset;
-    const format_ptr: *const i32 = @ptrCast(@alignCast(msg.data.ptr + format_offset));
+    // Read requested_output_format (field 3).
+    const format_field = msg.table.field_by_number(3).?;
+    const format_ptr: *const i32 = @ptrCast(@alignCast(msg.data.ptr + format_field.offset));
 
-    // Read test_category.
-    const cat_offset = conformance.ConformanceRequest.test_category_offset;
-    const cat_ptr: *const i32 = @ptrCast(@alignCast(msg.data.ptr + cat_offset));
+    // Read test_category (field 5).
+    const cat_field = msg.table.field_by_number(5).?;
+    const cat_ptr: *const i32 = @ptrCast(@alignCast(msg.data.ptr + cat_field.offset));
 
     return .{
         .payload_case = payload_case,

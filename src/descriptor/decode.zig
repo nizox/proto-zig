@@ -58,7 +58,8 @@ pub fn parse_file_descriptor_set(
 
     // Get FileDescriptorProto repeated field
     const fds_struct: *const bootstrap.FileDescriptorSet = @ptrCast(@alignCast(fds_msg.data.ptr));
-    const file_field = fds_struct.file orelse return error.MalformedDescriptor;
+    const file_field = &fds_struct.file;
+    if (file_field.count == 0) return error.MalformedDescriptor;
 
     // Process each FileDescriptorProto
     const file_count = file_field.count;
@@ -92,7 +93,8 @@ fn process_file_descriptor(
     const package = if (file_struct.package.len > 0) file_struct.package.slice() else "";
 
     // Process message types
-    if (file_struct.message_type) |message_type_field| {
+    const message_type_field = &file_struct.message_type;
+    if (message_type_field.count > 0) {
         const count = message_type_field.count;
         var i: u32 = 0;
         while (i < count) : (i += 1) {
@@ -122,7 +124,8 @@ fn process_descriptor_proto(
     try symbol_table.insert(full_name, table);
 
     // Process nested types
-    if (desc_struct.nested_type) |nested_field| {
+    const nested_field = &desc_struct.nested_type;
+    if (nested_field.count > 0) {
         const count = nested_field.count;
         var i: u32 = 0;
         while (i < count) : (i += 1) {
@@ -164,7 +167,8 @@ fn build_message_table(
     const desc_struct: *const bootstrap.DescriptorProto = @ptrCast(@alignCast(desc_msg.data.ptr));
 
     // Get field count
-    const field_repeated = desc_struct.field orelse {
+    const field_repeated = &desc_struct.field;
+    if (field_repeated.count == 0) {
         // Message with no fields
         const table = arena.alloc(MiniTable, 1) orelse return error.OutOfMemory;
         table[0] = .{
@@ -176,15 +180,13 @@ fn build_message_table(
             .dense_below = 0,
         };
         return &table[0];
-    };
+    }
 
     const field_count = field_repeated.count;
 
     // Get oneof count
-    const oneof_count: u8 = if (desc_struct.oneof_decl) |oneof_field|
-        @intCast(oneof_field.count)
-    else
-        0;
+    const oneof_field = &desc_struct.oneof_decl;
+    const oneof_count: u8 = @intCast(oneof_field.count);
 
     // Allocate fields array
     const fields = arena.alloc(MiniTableField, field_count) orelse return error.OutOfMemory;

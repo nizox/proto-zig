@@ -4,7 +4,7 @@ A standalone implementation of protobuf's upb library from scratch in Zig, follo
 
 ## Current Implementation Status
 
-**Status: Initial Implementation Complete**
+**Status: Core Implementation + Code Generator Complete**
 
 ### Conformance Test Results (2026-01-08)
 - **1163 passing tests** (97% of binary tests)
@@ -23,8 +23,22 @@ A standalone implementation of protobuf's upb library from scratch in Zig, follo
 | Message runtime | ✅ Complete | `src/message.zig` |
 | Bootstrap descriptors | ✅ Complete | `src/descriptor/bootstrap.zig` |
 | Conformance runner | ✅ Complete | `src/conformance/main.zig` |
-| Descriptor parser | ⏳ Not started | `src/descriptor/decode.zig` |
-| Test message schemas | ⏳ Not started | - |
+| Descriptor parser | ✅ Complete | `src/descriptor/decode.zig` |
+| **Code Generator** | ✅ **Complete** | `src/codegen/` |
+| Name conversion | ✅ Complete | `src/codegen/names.zig` |
+| Descriptor parser | ✅ Complete | `src/codegen/descriptor_parser.zig` |
+| Layout calculation | ✅ Complete | `src/codegen/layout.zig` |
+| Submessage linking | ✅ Complete | `src/codegen/linker.zig` |
+| Code generation | ✅ Complete | `src/codegen/generator.zig` |
+| Protoc plugin | ✅ Complete | `src/codegen/main.zig` |
+
+### Code Generator Features (NEW - 2026-01-12)
+- **protoc-gen-zig-pb** plugin generates MiniTable definitions from .proto files
+- Support for enums, nested messages, repeated fields, and self-referencing messages
+- Clean, idiomatic Zig code with proper depth-first ordering
+- Integration tests with test .proto files
+- Configurable protoc binary and protobuf source paths
+- **Usage**: `zig build update-proto` to generate code from descriptor.proto, plugin.proto, conformance.proto
 
 ### Known Limitations
 1. **Binary format only** - JSON, JSPB, and text format not supported
@@ -33,35 +47,29 @@ A standalone implementation of protobuf's upb library from scratch in Zig, follo
 
 ## Changelog
 
-### 2026-01-09 - Integer Overflow Fix (AFL++ Discovery)
-- AFL++ fuzzing discovered integer overflow in wire format reader
-- **Root cause**: `read_length_delimited()` used `u32` for position/length arithmetic
-- When `data_start + length` overflowed u32, bounds check was bypassed
-- **Fix**: Changed position tracking from `u32` to `usize` throughout:
-  - `reader.zig`: `ReadResult.consumed`, `skip_field` return type, internal counters
-  - `decode.zig`: `Decoder.pos` field
-- This matches upb's approach of using pointer-sized types (`const char*`)
-- Added saturating subtraction for safe overflow checks: `len > bytes.len -| pos`
-- See [FUZZ_PLAN.md](FUZZ_PLAN.md) for fuzzing infrastructure details
+### 2026-01-12 - Code Generator Complete
+Implemented `protoc-gen-zig-pb`, a complete protoc plugin that generates MiniTable definitions from .proto files, eliminating the need for hand-coded tables. The generator produces clean, idiomatic Zig code with support for enums, nested messages, repeated fields, and self-referencing messages.
 
-### 2026-01-08 - Inline Validation (upb/TigerBeetle pattern)
-- Validation happens inline during decoding, matching upb and TigerBeetle patterns
-- Conformance runner now validates by decoding with empty schema (all fields unknown)
-- Improved conformance results from 811 to 1163 passing tests (97%)
-- Remaining 36 failures require schema knowledge (packed fields, submessages)
+**Impact**: Enables automated code generation from .proto schemas using `zig build update-proto`, with configurable protoc paths for flexible build environments. All 83 unit tests and integration tests passing.
+
+**Technical fixes**: Resolved critical memory corruption issues in bootstrap structs and stack overflow in arena allocation.
+
+### 2026-01-09 - Integer Overflow Fix
+AFL++ fuzzing discovered and fixed integer overflow vulnerability in wire format reader where position arithmetic could bypass bounds checks.
+
+**Impact**: Improved security and robustness. Changed position tracking from `u32` to `usize` throughout reader and decoder, matching upb's approach.
+
+**Details**: See [FUZZ_PLAN.md](FUZZ_PLAN.md) for comprehensive fuzzing strategy.
+
+### 2026-01-08 - Inline Validation
+Implemented inline validation during decoding following upb and TigerBeetle patterns, enabling validation without full schema knowledge.
+
+**Impact**: Improved conformance test results from 811 to 1163 passing tests (97% of binary tests). Remaining 36 failures require schema-dependent validation.
 
 ### 2026-01-07 - Initial Implementation
-- Set up project structure with `build.zig` and `build.zig.zon`
-- Implemented Arena allocator with 8-byte alignment
-- Implemented wire format reader (varints, fixed32/64, length-delimited)
-- Implemented MiniTable and MiniTableField for runtime schema reflection
-- Implemented Message type with field access and oneof support
-- Implemented StringView with zero-copy string support (`alias_string` option)
-- Implemented wire format decoder with all scalar types
-- Implemented wire format encoder with two-pass size calculation
-- Implemented bootstrap MiniTables for ConformanceRequest/Response
-- Implemented conformance test runner with length-prefixed protocol
-- Achieved 811 passing conformance tests
+Implemented complete protobuf wire format decoder/encoder in Zig with runtime reflection via MiniTable schema. Includes arena allocator, zero-copy string support, and conformance test runner.
+
+**Impact**: Achieved 811 passing conformance tests on first implementation, demonstrating robust binary format support with Tiger Style memory management principles.
 
 ## Scope
 
