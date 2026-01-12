@@ -1,107 +1,110 @@
 # proto-zig
 
-A standalone protobuf implementation in Zig, inspired by [upb](https://github.com/protocolbuffers/protobuf/tree/main/upb).
+A standalone Protocol Buffers implementation in Zig, inspired by [upb](https://github.com/protocolbuffers/protobuf/tree/main/upb).
+
+> Status: Experimental project. Not production-ready yet. Does not target full compatibility with the protobuf specification. Most of the project is co-authored with Claude.
 
 ## Features
 
-- Binary protobuf wire format encoding/decoding
+- Binary wire format encoding/decoding
 - Runtime schema reflection via MiniTable
-- Arena-based memory allocation (no allocator required after init)
-- Zero-copy string decoding option
+- Arena-based memory allocation
+- Zero-copy string decoding
 - Proto3 support
+- Code generator plugin (`protoc-gen-zig-pb`)
 
-## Requirements
-
-- Zig 0.15.2 or later
-- For conformance tests: [protobuf](https://github.com/protocolbuffers/protobuf) repository with bazel
-
-## Building
+## Quick Start
 
 ```bash
-# Build the library and conformance runner
-zig build
-
-# Run unit tests
-zig build test
+zig build        # Build library
+zig build test   # Run tests
 ```
 
-## Running Conformance Tests
+## Example
 
-The conformance tests validate the implementation against the official protobuf test suite.
+Given a proto file:
 
-### Prerequisites
+```protobuf
+// person.proto
+syntax = "proto3";
 
-1. Clone the protobuf repository:
-   ```bash
-   git clone https://github.com/protocolbuffers/protobuf.git
-   cd protobuf
-   ```
+message Person {
+  string name = 1;
+  int32 age = 2;
+}
+```
 
-2. Build the conformance test runner (requires bazel/bazelisk):
-   ```bash
-   bazelisk build //conformance:conformance_test_runner
-   ```
-
-### Running Tests
+Generate the MiniTable definition:
 
 ```bash
-# Build proto-zig conformance runner
-cd /path/to/proto-zig
-zig build
-
-# Run conformance tests
-/path/to/protobuf/bazel-bin/conformance/conformance_test_runner ./zig-out/bin/conformance_zig
+protoc --plugin=protoc-gen-zig-pb=./zig-out/bin/protoc-gen-zig-pb \
+       --zig-pb_out=src/generated person.proto
 ```
 
-### Expected Results
-
-Current implementation status:
-- **1163 passing** (97% of binary tests)
-- **36 failing** - Schema-dependent validation (packed fields, submessages)
-- **1390 skipped** - JSON/text format tests (not implemented)
-
-The 36 failing tests require schema knowledge to validate packed field element counts and submessage contents. To pass these, MiniTables for `TestAllTypesProto3` and other test messages would need to be implemented.
-
-## Usage Example
+Use the generated schema to decode and encode messages:
 
 ```zig
+const std = @import("std");
 const proto = @import("proto");
 
-// Create arena from pre-allocated buffer
-var buffer: [4096]u8 = undefined;
-var arena = proto.Arena.init(&buffer);
+// Generated MiniTable (or hand-written for simple cases)
+const person = @import("generated/person.pb.zig");
 
-// Create message using schema
-const msg = proto.Message.new(&arena, &my_table) orelse return error.OutOfMemory;
+pub fn main() !void {
+    // 1. Create arena with fixed buffer (no dynamic allocation)
+    var buffer: [4096]u8 = undefined;
+    var arena = proto.Arena.init(&buffer);
 
-// Decode from binary
-try proto.decode(input_bytes, msg, &arena, .{ .alias_string = true });
+    // 2. Create message using generated schema
+    const msg = proto.Message.new(&arena, &person.person_table) orelse return error.OutOfMemory;
 
-// Access fields
-const value = msg.get_scalar(&field_def);
+    // 3. Decode binary protobuf data
+    const input = [_]u8{
+        0x0a, 0x05, 'A', 'l', 'i', 'c', 'e', // field 1: "Alice"
+        0x10, 0x1e,                           // field 2: 30
+    };
+    try proto.decode(&input, msg, &arena, .{});
 
-// Encode to binary
-const output = try proto.encode(msg, &my_table, &arena, .{});
+    // 4. Access fields
+    const name = msg.get_scalar(&person.person_table.fields[0]); // StringView
+    const age = msg.get_scalar(&person.person_table.fields[1]);  // i32
+    std.debug.print("Name: {s}, Age: {d}\n", .{ name.string_val.slice(), age.int32_val });
+
+    // 5. Modify and encode back to binary
+    msg.set_scalar(&person.person_table.fields[1], .{ .int32_val = 31 });
+    const encoded = try proto.encode(msg, &arena, .{});
+    _ = encoded; // Use encoded bytes...
+}
 ```
 
-## Project Structure
+### Decode Options
 
+```zig
+try proto.decode(&input, msg, &arena, .{
+    .alias_string = true,  // Zero-copy: strings point into input buffer
+    .check_utf8 = true,    // Validate UTF-8 in string fields
+    .max_depth = 100,      // Max recursion depth for nested messages
+});
 ```
-src/
-├── proto.zig              # Root module, public API
-├── arena.zig              # Arena allocator
-├── message.zig            # Message type and StringView
-├── mini_table.zig         # Schema descriptors
-├── wire/
-│   ├── types.zig          # Wire types enum
-│   ├── reader.zig         # Low-level wire reading
-│   ├── decode.zig         # Message decoding
-│   └── encode.zig         # Message encoding
-├── descriptor/
-│   └── bootstrap.zig      # Conformance message schemas
-└── conformance/
-    └── main.zig           # Conformance test runner
-```
+
+## Status
+
+97% conformance with official protobuf binary test suite (1163/1199 tests passing).
+
+## Changelog
+
+### 2026-01-12 - Code Generator + Oneof Support
+- `protoc-gen-zig-pb` plugin generates MiniTable definitions from .proto files
+- Proper proto3 oneof handling with shared storage and case tags
+
+### 2026-01-09 - Integer Overflow Fix
+- Fixed integer overflow vulnerability in wire format reader (found via AFL++)
+
+### 2026-01-08 - Inline Validation
+- Inline validation during decoding (811 → 1163 passing tests)
+
+### 2026-01-07 - Initial Implementation
+- Complete wire format decoder/encoder with MiniTable runtime reflection
 
 ## License
 

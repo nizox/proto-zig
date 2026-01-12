@@ -1,145 +1,212 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Development guide for proto-zig, a Protocol Buffers implementation in Zig inspired by upb.
 
-## Project Overview
+## Development Workflow (Mandatory)
 
-proto-zig is a standalone Protocol Buffers implementation in Zig, inspired by upb (micro protobuf). It provides binary wire format encoding/decoding with runtime reflection via MiniTable, using arena-based memory allocation without requiring allocators after initialization.
+Follow this workflow for all changes:
+
+### 1. ADR First
+
+Write an Architecture Decision Record before implementing:
+
+- Create `docs/adr/NNNN-title.md` for new decisions
+- Identify which component is modified: library, codegen, conformance tests, fuzz tests
+- Derive implementation plan from the ADR
+- ADR is a living doc - update when architecture, constraints, or requirements change
+
+### 2. Reference UPB Implementation
+
+Check upb's implementation before proposing a solution:
+
+- Read upb source code in `/home/bits/gh/google/protobuf/upb/`
+- Consult upb design docs for architectural decisions
+- Understand why upb made specific choices before diverging
+
+### 3. Zig Zen
+
+Keep implementation simple:
+
+- Early return for errors
+- Explicit error handling
+- No hidden control flow
+- Prefer simple over clever
+
+### 4. Tests First
+
+Write tests before implementation:
+
+- Unit tests for pure logic
+- Fuzz tests for code processing arbitrary data
+- Run `zig build test` to verify
+
+### Pre-Commit Checklist
+
+Before writing a jj description:
+
+- [ ] Tests are passing (`zig build test`)
+- [ ] README.md updated with short changelog entry
+- [ ] CLAUDE.md updated if development workflow changed
+
+### Helpful Tips
+
+- Check Zig standard library (`/usr/lib/zig/std/`) to verify usage is correct
+- ADR files are in `docs/adr/` as markdown files
 
 ## Version Control
 
-This repository uses jj (Jujutsu) for version control, not git. Use `jj` commands instead of `git` commands.
+This repository uses **jj (Jujutsu)**, not git. Use `jj` commands for all version control operations.
 
 ## Build Commands
 
 ```bash
-# Build library and conformance runner
-zig build
-
-# Run unit tests (includes proto tests, codegen tests, and fuzz infrastructure tests)
-zig build test
-
-# Check if code compiles without full build
-zig build check
-
-# Build conformance test runner
-zig build
-# Then run with protobuf test suite:
-# /path/to/protobuf/bazel-bin/conformance/conformance_test_runner ./zig-out/bin/conformance_zig
+zig build              # Build library and conformance runner
+zig build test         # Run unit tests
+zig build check        # Check compilation without full build
 ```
 
-## Code Generation (protoc-gen-zig-pb)
+## Code Generation
 
-proto-zig includes a protoc plugin for generating Zig MiniTable definitions from .proto files.
+The `protoc-gen-zig-pb` plugin generates MiniTable definitions from .proto files.
 
 ```bash
-# Generate MiniTables from .proto files (uses system protoc)
-zig build update-proto
-
-# Use custom protoc binary
-zig build update-proto -Dprotoc=/path/to/protoc
-
-# Use custom protobuf source directory
-zig build update-proto -Dprotobuf-src=/path/to/protobuf
-
-# Run code generation integration tests
-zig build test-codegen-integration
+zig build update-proto                           # Generate from .proto files
+zig build update-proto -Dprotoc=/path/to/protoc  # Custom protoc binary
+zig build test-codegen-integration               # Run codegen integration tests
 ```
 
-**Generated Files:**
+**Generated files:**
 - `plugin.proto` → `src/generated/plugin.pb.zig`
 - `conformance.proto` → `src/generated/conformance.pb.zig`
 
-**Not Generated (uses hand-coded bootstrap):**
-- `descriptor.proto` - Uses proto2 features (optional keyword); see `src/descriptor/bootstrap.zig`
+**Not generated (hand-coded bootstrap):**
+- `descriptor.proto` - Uses proto2 features; see `src/descriptor/bootstrap.zig`
 
-**Generated Code Features:**
-- Clean, idiomatic Zig code with MiniTable definitions
-- Support for enums, nested messages, repeated fields
-- Self-referencing messages use `pub var` for circular references
-- Depth-first ordering for proper initialization
+## Conformance Testing
+
+```bash
+# Build conformance runner
+zig build
+
+# Run against official test suite (requires protobuf repo with bazel)
+/path/to/protobuf/bazel-bin/conformance/conformance_test_runner ./zig-out/bin/conformance_zig
+```
+
+Current status: 1163/1199 binary tests passing (97%). 36 failures require schema-dependent validation.
 
 ## Fuzzing
 
-Multiple fuzzing strategies are available:
-
 ### Unified Fuzz Executable
+
 ```bash
-# Seed-based fuzzing (deterministic pseudo-random)
+# Seed-based fuzzing
 zig build fuzz -- decode [seed] [--events-max=N]
-zig build fuzz -- roundtrip [seed] [--events-max=N]
-zig build fuzz -- varint [seed] [--events-max=N]
 
-# Replay crashes from stdin
+# Replay crashes
 zig build fuzz -- replay-decode < crash.bin
-zig build fuzz -- replay-roundtrip < crash.bin
-zig build fuzz -- replay-varint < crash.bin
 
-# Run quick smoke test of all fuzzers
+# Smoke test (CI gate)
 zig build fuzz -- smoke
 ```
 
 ### Native Zig Fuzzing
-```bash
-# Build native fuzz tests (uses Zig's built-in fuzzing)
-zig build fuzz-native-decode
-zig build fuzz-native-roundtrip
-zig build fuzz-native-varint
-zig build fuzz-native  # Build all
 
-# Run with --fuzz flag
+```bash
+zig build fuzz-native              # Build all native fuzz tests
 ./zig-out/bin/fuzz-native-decode --fuzz
 ```
 
 ### AFL++ Fuzzing
+
 ```bash
-# Build AFL++ instrumented executables
-zig build afl  # Builds afl-decode-instr and afl-roundtrip-instr
+zig build afl  # Build instrumented binaries
+
+AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
+./zig-out/AFLplusplus/bin/afl-fuzz -i src/fuzz/corpus -o fuzz/output/decode-instr -m none -t 1000 \
+    -- ./zig-out/bin/afl-decode-instr
 ```
+
+### Adding a New Fuzzer
+
+1. Create `src/fuzz/new_fuzzer.zig` with `fuzz()`, `run()`, and `test "fuzz"` functions
+2. Register in `src/fuzz_tests.zig` (add to Fuzzer enum and switch statements)
+3. Add build target in `build.zig`
 
 ## Architecture
 
 ### Core Components
 
-**Arena (`arena.zig`)**: Fixed-buffer bump-pointer allocator. All memory allocated at initialization with fixed upper bounds. Memory freed all at once via reset, no individual frees. Follows Tiger Style principles.
-
-**MiniTable (`mini_table.zig`)**: Compact binary representation of message schemas describing field layout, types, and wire encoding. Similar to upb's MiniTable design.
-
-**Message (`message.zig`)**: Runtime representation of protobuf messages with reflection-based field access. Uses StringView for zero-copy string decoding option. Contains RepeatedField for dynamic arrays.
-
-**Wire Protocol (`wire/`)**:
-- `types.zig`: Wire type enums and tags
-- `reader.zig`: Low-level wire format reading (varints, fixed values)
-- `decode.zig`: Message decoder from binary to Message
-- `encode.zig`: Message encoder from Message to binary
-
-**Bootstrap (`descriptor/bootstrap.zig`)**: Schema definitions for conformance test messages.
+| Component | File | Purpose |
+|-----------|------|---------|
+| Arena | `arena.zig` | Fixed-buffer bump-pointer allocator |
+| MiniTable | `mini_table.zig` | Compact schema representation |
+| Message | `message.zig` | Runtime message with reflection |
+| Wire Reader | `wire/reader.zig` | Low-level varint/fixed reading |
+| Decoder | `wire/decode.zig` | Binary → Message |
+| Encoder | `wire/encode.zig` | Message → Binary |
+| Bootstrap | `descriptor/bootstrap.zig` | Hand-coded descriptor schemas |
 
 ### Data Flow
 
 1. Initialize Arena with pre-allocated buffer
 2. Create Message using MiniTable schema
-3. Decode binary protobuf into Message via wire.decode
-4. Access fields via Message methods (get_scalar, get_string, get_repeated)
-5. Encode Message back to binary via wire.encode
+3. Decode binary protobuf into Message
+4. Access fields via `get_scalar`, `get_string`, `get_repeated`
+5. Encode Message back to binary
 
-### Key Design Principles
+### Project Structure
 
-- **Zero-copy**: StringView optionally aliases input buffer to avoid string copies
+```
+src/
+├── proto.zig              # Root module, public API
+├── arena.zig              # Arena allocator
+├── message.zig            # Message type and StringView
+├── mini_table.zig         # Schema descriptors
+├── wire/
+│   ├── types.zig          # Wire types enum
+│   ├── reader.zig         # Low-level wire reading
+│   ├── decode.zig         # Message decoding
+│   └── encode.zig         # Message encoding
+├── descriptor/
+│   ├── decode.zig         # Descriptor parsing
+│   └── bootstrap.zig      # Hand-coded schemas
+├── codegen/
+│   ├── main.zig           # protoc plugin entry
+│   ├── generator.zig      # Code generation
+│   ├── layout.zig         # Field layout calculation
+│   └── linker.zig         # Submessage linking
+├── generated/             # Generated MiniTables
+├── fuzz/                  # Fuzz test modules
+├── fuzz_tests.zig         # Unified fuzzer executable
+└── conformance/
+    └── main.zig           # Conformance test runner
+```
+
+## Design Principles
+
+- **Zero-copy**: StringView optionally aliases input buffer
 - **Fixed bounds**: Arena uses fixed buffer, no dynamic allocation after init
-- **Runtime reflection**: MiniTable enables generic encode/decode without generated code
-- **Zig zen**: Follow Zig's design principles for code style and architecture
-
-## Testing Strategy
-
-**Unit tests**: Inline tests throughout modules, run via `zig build test`
-
-**Conformance tests**: Validates against official protobuf test suite. Currently 1163/1199 binary tests passing (97%). 36 failures require schema-dependent validation of packed fields and submessages.
-
-**Fuzz tests**: Multiple fuzzing approaches (seed-based, native Zig, AFL++) test decoder/encoder robustness. Fuzz infrastructure has its own unit tests.
+- **Runtime reflection**: MiniTable enables generic encode/decode
+- **Zig zen**: Follow Zig's design principles
 
 ## Known Limitations
 
-- JSON and text format not implemented (1390 conformance tests skipped)
-- 36 conformance tests fail due to missing schema validation for packed fields and submessage contents
-- Requires MiniTable definitions for message types (bootstrap.zig provides conformance test schemas)
+- Binary format only (no JSON/text)
+- Proto3 only (no proto2 features)
+- No proto3 `optional` keyword (use real oneofs)
+- No maps (use repeated message with key/value)
+
+## Reference Files
+
+### upb (wire format)
+- `/home/bits/gh/google/protobuf/upb/wire/reader.h`
+- `/home/bits/gh/google/protobuf/upb/wire/decode.h`
+- `/home/bits/gh/google/protobuf/upb/mini_table/field.h`
+
+### Conformance
+- `/home/bits/gh/google/protobuf/conformance/conformance.proto`
+- `/home/bits/gh/google/protobuf/conformance/conformance_cpp.cc`
+
+### TigerBeetle (Zig patterns)
+- `/home/bits/gh/tigerbeetle/tigerbeetle/src/vsr/message_header.zig`
+- `/home/bits/gh/tigerbeetle/tigerbeetle/docs/TIGER_STYLE.md`
