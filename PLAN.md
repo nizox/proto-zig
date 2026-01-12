@@ -21,6 +21,7 @@ A standalone implementation of protobuf's upb library from scratch in Zig, follo
 | Wire encoder | ✅ Complete | `src/wire/encode.zig` |
 | MiniTable schema | ✅ Complete | `src/mini_table.zig` |
 | Message runtime | ✅ Complete | `src/message.zig` |
+| **Oneof support** | ✅ **Complete** | `src/message.zig`, `src/codegen/layout.zig` |
 | Bootstrap descriptors | ✅ Complete | `src/descriptor/bootstrap.zig` |
 | Conformance runner | ✅ Complete | `src/conformance/main.zig` |
 | Descriptor parser | ✅ Complete | `src/descriptor/decode.zig` |
@@ -38,19 +39,30 @@ A standalone implementation of protobuf's upb library from scratch in Zig, follo
 - Clean, idiomatic Zig code with proper depth-first ordering
 - Integration tests with test .proto files
 - Configurable protoc binary and protobuf source paths
-- **Usage**: `zig build update-proto` to generate code from descriptor.proto, plugin.proto, conformance.proto
+- **Usage**: `zig build update-proto` to generate code from plugin.proto, conformance.proto
+- **Note**: descriptor.proto uses proto2 features; we use hand-coded bootstrap schemas instead
 
 ### Known Limitations
 1. **Binary format only** - JSON, JSPB, and text format not supported
-2. **Passthrough mode** - Conformance runner echoes valid input without full parsing
-3. **No malformed input rejection** - Requires TestAllTypesProto3 MiniTable to validate
+2. **Proto3 only** - Proto2 features (required, default values, extensions) not supported
+3. **No proto3 optional** - Hasbits not generated; use real oneofs for explicit presence
+4. **Passthrough mode** - Conformance runner echoes valid input without full parsing
+5. **No malformed input rejection** - Requires TestAllTypesProto3 MiniTable to validate
 
 ## Changelog
 
-### 2026-01-12 - Code Generator Complete
+### 2026-01-12 - Code Generator Complete + Oneof Support
 Implemented `protoc-gen-zig-pb`, a complete protoc plugin that generates MiniTable definitions from .proto files, eliminating the need for hand-coded tables. The generator produces clean, idiomatic Zig code with support for enums, nested messages, repeated fields, and self-referencing messages.
 
-**Impact**: Enables automated code generation from .proto schemas using `zig build update-proto`, with configurable protoc paths for flexible build environments. All 83 unit tests and integration tests passing.
+**Oneof support**: Implemented proper proto3 oneof handling:
+- Oneof fields share storage (single data slot per oneof, sized for largest field)
+- Case tag tracks which field is active (4 bytes per oneof)
+- `which_oneof()` API to query active field
+- Proper clear semantics (only clears if field is active)
+
+**Scope clarification**: Explicitly not supporting proto2 or proto3 `optional` keyword. Hasbits removed from codegen (always 0 for proto3). Bootstrap schemas retain hasbit support for descriptor parsing.
+
+**Impact**: Enables automated code generation from .proto schemas using `zig build update-proto`, with configurable protoc paths for flexible build environments. All 87 unit tests passing.
 
 **Technical fixes**: Resolved critical memory corruption issues in bootstrap structs and stack overflow in arena allocation.
 
@@ -73,10 +85,18 @@ Implemented complete protobuf wire format decoder/encoder in Zig with runtime re
 
 ## Scope
 
-- **Wire format**: Binary only (initially)
+- **Wire format**: Binary only (JSON/text format not planned)
 - **Schema handling**: Runtime reflection (parse descriptors at runtime)
-- **Proto version**: Proto3 only
+- **Proto version**: Proto3 only (proto2 not supported)
+- **Presence tracking**: Real oneofs only (proto3 `optional` keyword / synthetic oneofs not supported)
 - **Validation**: Protobuf conformance test suite
+
+### Explicitly Not Supported
+- **Proto2**: No required fields, no default values, no extensions
+- **Proto3 optional keyword**: No synthetic oneofs, no hasbits for scalar fields
+- **JSON/JSPB/Text format**: Binary wire format only
+- **Maps**: Not yet implemented (use repeated message with key/value fields)
+- **Well-known types**: No special handling for google.protobuf.Any, Timestamp, etc.
 
 ## Architecture Overview
 
@@ -191,12 +211,13 @@ pub const FieldMode = enum(u2) {
 pub const MiniTableField = extern struct {
     number: u32,
     offset: u16,
-    presence: i16,       // >0: hasbit index, <0: ~oneof_index, 0: none
+    presence: i16,       // <0: ~oneof_index, 0: none (proto3 implicit presence)
+                         // Note: >0 (hasbit index) only used in hand-coded bootstrap schemas
     submsg_index: u16,   // Index into subtables array
     field_type: FieldType,
     mode: FieldMode,
     is_packed: bool,
-    _padding: [1]u8 = .{0},
+    is_oneof: bool,      // True if field is part of a oneof
 
     comptime {
         assert(@sizeOf(MiniTableField) == 12);

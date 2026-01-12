@@ -115,7 +115,6 @@ fn generateMessage(msg: MessageInfo, writer: anytype, allocator: Allocator) !voi
                 try writer.print("        .field_type = .{s},\n", .{@tagName(field.field_type)});
                 try writer.print("        .mode = .{s},\n", .{@tagName(field.mode)});
                 try writer.print("        .is_packed = {s},\n", .{if (field.is_packed) "true" else "false"});
-                try writer.writeAll("        .is_oneof = false,\n");
                 try writer.writeAll("    },\n");
             }
             try writer.writeAll("};\n\n");
@@ -195,7 +194,7 @@ test "generateFile - simple message" {
             .field_type = .TYPE_INT32,
             .mode = .scalar,
             .is_packed = false,
-        },
+                    },
     };
 
     var msg = MessageInfo{
@@ -261,7 +260,7 @@ test "generateFile - self-referencing message" {
             .field_type = .TYPE_MESSAGE,
             .mode = .scalar,
             .is_packed = false,
-        },
+                    },
     };
 
     var submessages = [_][]const u8{".test.Node"};

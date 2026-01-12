@@ -110,17 +110,20 @@ pub const MiniTableField = struct {
     /// Whether repeated field uses packed encoding.
     is_packed: bool,
 
-    /// Indicates whether the field is part of a oneof.
-    is_oneof: bool = false,
-
     /// Maximum submessage index value (indicates not a message field).
     pub const max_submsg_index: u16 = std.math.maxInt(u16);
 
+    /// Returns true if this field is part of a oneof.
+    /// Derived from presence encoding: negative presence means oneof.
+    pub fn is_oneof(self: *const MiniTableField) bool {
+        return self.presence < 0;
+    }
+
     /// Returns true if this field has explicit presence tracking.
     pub fn has_presence(self: *const MiniTableField) bool {
-        // Proto3 scalars have implicit presence (no hasbit).
-        // Proto2 fields and oneof fields have explicit presence.
-        return self.presence != 0 or self.is_oneof;
+        // Proto3 scalars have implicit presence (presence = 0).
+        // Hasbits (presence > 0) and oneofs (presence < 0) have explicit presence.
+        return self.presence != 0;
     }
 
     /// Returns the hasbit index if this field uses hasbits.
@@ -285,7 +288,6 @@ test "MiniTableField: presence" {
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = true,
     };
     assert(oneof_field.has_presence());
     assert(oneof_field.oneof_index() == 0);

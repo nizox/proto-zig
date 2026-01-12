@@ -16,9 +16,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // Generated conformance tables module.
+    // Hand-written conformance tables module (using tables.zig until codegen is fixed).
     const conformance_generated_module = b.createModule(.{
-        .root_source_file = b.path("src/generated/conformance.pb.zig"),
+        .root_source_file = b.path("src/conformance/tables.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
@@ -118,21 +118,13 @@ pub fn build(b: *std.Build) void {
     // Requires: protoc and protobuf source at /home/bits/gh/google/protobuf/
     // Usage: zig build update-proto
     //
+    // Note: descriptor.proto is NOT generated because it uses proto2 features
+    // (optional keyword, default values). We use hand-coded bootstrap schemas
+    // in src/descriptor/bootstrap.zig instead.
+    //
     const update_proto_step = b.step("update-proto", "Regenerate .proto MiniTables");
     const install_plugin = b.addInstallArtifact(plugin_exe, .{});
     update_proto_step.dependOn(&install_plugin.step);
-
-    // Generate descriptor.proto -> src/generated/descriptor.pb.zig
-    const descriptor_proto_path = b.fmt("{s}/src/google/protobuf/descriptor.proto", .{protobuf_src});
-    const gen_descriptor = b.addSystemCommand(&.{
-        protoc_path,
-        b.fmt("--plugin=protoc-gen-zig-pb={s}", .{b.getInstallPath(.bin, "protoc-gen-zig-pb")}),
-        "--zig-pb_out=src/generated",
-        b.fmt("-I{s}/src", .{protobuf_src}),
-        descriptor_proto_path,
-    });
-    gen_descriptor.step.dependOn(&install_plugin.step);
-    update_proto_step.dependOn(&gen_descriptor.step);
 
     // Generate plugin.proto -> src/generated/plugin.pb.zig
     const plugin_proto_path = b.fmt("{s}/src/google/protobuf/compiler/plugin.proto", .{protobuf_src});

@@ -263,7 +263,6 @@ fn build_field(
         .field_type = ft,
         .mode = mode,
         .is_packed = (mode == .repeated and ft.is_packable()),
-        .is_oneof = (oneof_index > 0),
     };
 }
 
@@ -373,7 +372,7 @@ fn calculate_layout(
 
     // Count regular fields
     for (fields) |*field| {
-        if (field.is_oneof) continue; // Oneof fields counted separately
+        if (field.is_oneof()) continue; // Oneof fields counted separately
         const rep = field_rep(field, is_64bit);
         rep_counts[@intFromEnum(rep)] += 1;
     }
@@ -399,7 +398,7 @@ fn calculate_layout(
     // Assign field offsets
     var rep_next = rep_offsets;
     for (fields) |*field| {
-        if (field.is_oneof) {
+        if (field.is_oneof()) {
             // Oneof fields share storage - assign later
             continue;
         }
@@ -483,7 +482,6 @@ test "field layout calculation" {
             .field_type = .TYPE_INT32,
             .mode = .scalar,
             .is_packed = false,
-            .is_oneof = false,
         },
         .{
             .number = 2,
@@ -493,7 +491,6 @@ test "field layout calculation" {
             .field_type = .TYPE_STRING,
             .mode = .scalar,
             .is_packed = false,
-            .is_oneof = false,
         },
     };
 

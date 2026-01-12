@@ -93,6 +93,11 @@ pub const FieldLayout = struct {
     field_type: FieldType,
     mode: Mode,
     is_packed: bool,
+
+    /// Returns true if this field is part of a oneof (derived from presence).
+    pub fn is_oneof(self: *const FieldLayout) bool {
+        return self.presence < 0;
+    }
 };
 
 // Helper functions for accessing message fields by number
@@ -112,14 +117,17 @@ fn getScalar(msg: *const Message, comptime T: type, field_number: u32) ?T {
     return switch (T) {
         i32 => switch (value) {
             .int32_val => |v| v,
+            .none => null,  // Field not present
             else => null,
         },
         i64 => switch (value) {
             .int64_val => |v| v,
+            .none => null,  // Field not present
             else => null,
         },
         u32 => switch (value) {
             .uint32_val => |v| v,
+            .none => null,  // Field not present
             else => null,
         },
         else => @compileError("Unsupported scalar type"),
@@ -325,13 +333,16 @@ fn parseDescriptorProto(
     // Note: Current bootstrap.zig doesn't have this field, so we skip for now
     const nested_enums: []EnumInfo = &.{};
 
+    const oneofs_slice = try oneofs.toOwnedSlice(allocator);
+    const fields_slice = try fields.toOwnedSlice(allocator);
+
     return MessageInfo{
         .name = try allocator.dupe(u8, name),
         .full_name = full_name,
-        .fields = try fields.toOwnedSlice(allocator),
+        .fields = fields_slice,
         .nested_messages = try nested_messages.toOwnedSlice(allocator),
         .nested_enums = nested_enums,
-        .oneofs = try oneofs.toOwnedSlice(allocator),
+        .oneofs = oneofs_slice,
         .is_map_entry = false, // TODO: Check options for map_entry flag
     };
 }
@@ -343,10 +354,16 @@ fn parseFieldDescriptor(field_msg: *const Message, allocator: Allocator) !FieldI
     const label = getScalar(field_msg, i32, 4) orelse 1; // label
     const type_int = getScalar(field_msg, i32, 5) orelse 0; // type
     const type_name = getString(field_msg, 6); // type_name
-    const oneof_index = getScalar(field_msg, i32, 9); // oneof_index
+    // Note: protoc sends oneof_index=0 for ALL fields, even those not in oneofs.
+    // We need to validate the index against the actual oneof count later.
+    // For now, just capture the raw value if present.
+    const oneof_index_raw = getScalar(field_msg, i32, 9); // oneof_index
 
     const field_type: FieldType = @enumFromInt(@as(u8, @intCast(type_int)));
     const field_label: FieldLabel = @enumFromInt(label);
+
+    // Convert to u16, will be validated against oneof_count during layout
+    const oneof_idx: ?u16 = if (oneof_index_raw) |idx| @intCast(idx) else null;
 
     return FieldInfo{
         .name = try allocator.dupe(u8, name),
@@ -354,7 +371,7 @@ fn parseFieldDescriptor(field_msg: *const Message, allocator: Allocator) !FieldI
         .label = field_label,
         .type = field_type,
         .type_name = try allocator.dupe(u8, type_name),
-        .oneof_index = if (oneof_index) |idx| @intCast(idx) else null,
+        .oneof_index = oneof_idx,
         .is_packed = false, // TODO: Read from options
     };
 }

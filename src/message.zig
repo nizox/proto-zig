@@ -203,6 +203,15 @@ pub const Message = struct {
             self.clear_hasbit(hasbit_idx);
         }
 
+        // Handle oneof: only clear if this field is the active one.
+        if (field.oneof_index()) |oneof_idx| {
+            if (!self.has_oneof(oneof_idx, field.number)) {
+                return; // Different field is active, nothing to clear
+            }
+            // Clear the oneof case tag
+            self.clear_oneof(oneof_idx);
+        }
+
         // Zero the field data.
         const offset = field.offset;
         const size = self.field_size(field);
@@ -350,6 +359,20 @@ pub const Message = struct {
         case_ptr.* = field_number;
     }
 
+    fn clear_oneof(self: *Message, oneof_idx: u16) void {
+        const case_offset = self.table.hasbit_bytes + oneof_idx * 4;
+        const case_ptr: *u32 = @ptrCast(@alignCast(self.data.ptr + case_offset));
+        case_ptr.* = 0;
+    }
+
+    /// Get the field number of the currently active field in a oneof.
+    /// Returns 0 if no field is set.
+    pub fn which_oneof(self: *const Message, oneof_idx: u16) u32 {
+        const case_offset = self.table.hasbit_bytes + oneof_idx * 4;
+        const case_ptr: *const u32 = @ptrCast(@alignCast(self.data.ptr + case_offset));
+        return case_ptr.*;
+    }
+
     fn is_default_value(self: *const Message, field: *const MiniTableField) bool {
         const size = self.field_size(field);
         const field_data = self.data[field.offset .. field.offset + size];
@@ -437,4 +460,129 @@ test "StringView" {
 
     const aliased = StringView.from_aliased("world");
     assert(aliased.is_aliased);
+}
+
+test "Message: oneof field access" {
+    // Oneof with two int32 fields at the same offset
+    // Layout: [4 bytes oneof case tag] [4 bytes shared data]
+    const fields = [_]MiniTableField{
+        .{
+            .number = 1,
+            .offset = 4, // Shared data offset (after case tag)
+            .presence = -1, // Oneof index 0: -1 - 0 = -1
+            .submsg_index = MiniTableField.max_submsg_index,
+            .field_type = .TYPE_INT32,
+            .mode = .scalar,
+            .is_packed = false,
+                    },
+        .{
+            .number = 2,
+            .offset = 4, // Same offset (shared storage)
+            .presence = -1, // Same oneof index 0
+            .submsg_index = MiniTableField.max_submsg_index,
+            .field_type = .TYPE_INT32,
+            .mode = .scalar,
+            .is_packed = false,
+                    },
+    };
+
+    const table = MiniTable{
+        .fields = &fields,
+        .submessages = &.{},
+        .size = 8, // 4 bytes case tag + 4 bytes data
+        .hasbit_bytes = 0,
+        .oneof_count = 1,
+        .dense_below = 2,
+    };
+
+    var buffer: [1024]u8 = undefined;
+    var arena = Arena.init(&buffer);
+
+    const msg = Message.new(&arena, &table).?;
+
+    // Initially no field is set
+    assert(msg.which_oneof(0) == 0);
+    assert(!msg.has_field(&fields[0]));
+    assert(!msg.has_field(&fields[1]));
+
+    // Set field 1
+    msg.set_scalar(&fields[0], .{ .int32_val = 42 });
+    assert(msg.which_oneof(0) == 1);
+    assert(msg.has_field(&fields[0]));
+    assert(!msg.has_field(&fields[1]));
+    assert(msg.get_scalar(&fields[0]).int32_val == 42);
+    assert(msg.get_scalar(&fields[1]) == .none);
+
+    // Set field 2 - should replace field 1
+    msg.set_scalar(&fields[1], .{ .int32_val = 123 });
+    assert(msg.which_oneof(0) == 2);
+    assert(!msg.has_field(&fields[0]));
+    assert(msg.has_field(&fields[1]));
+    assert(msg.get_scalar(&fields[0]) == .none);
+    assert(msg.get_scalar(&fields[1]).int32_val == 123);
+
+    // Clear field 2
+    msg.clear_field(&fields[1]);
+    assert(msg.which_oneof(0) == 0);
+    assert(!msg.has_field(&fields[0]));
+    assert(!msg.has_field(&fields[1]));
+
+    // Clearing non-active field should be a no-op
+    msg.set_scalar(&fields[0], .{ .int32_val = 999 });
+    msg.clear_field(&fields[1]); // field 1 is active, not field 2
+    assert(msg.which_oneof(0) == 1); // Still set to field 1
+    assert(msg.get_scalar(&fields[0]).int32_val == 999);
+}
+
+test "Message: oneof with different types" {
+    // Oneof with int32 and string (string is larger)
+    // Layout: [4 bytes oneof case tag] [13 bytes shared data (StringView)]
+    const fields = [_]MiniTableField{
+        .{
+            .number = 1,
+            .offset = 8, // Shared data offset (aligned to 8 for StringView)
+            .presence = -1, // Oneof index 0
+            .submsg_index = MiniTableField.max_submsg_index,
+            .field_type = .TYPE_INT32,
+            .mode = .scalar,
+            .is_packed = false,
+                    },
+        .{
+            .number = 2,
+            .offset = 8, // Same offset (shared storage)
+            .presence = -1, // Same oneof index 0
+            .submsg_index = MiniTableField.max_submsg_index,
+            .field_type = .TYPE_STRING,
+            .mode = .scalar,
+            .is_packed = false,
+                    },
+    };
+
+    const table = MiniTable{
+        .fields = &fields,
+        .submessages = &.{},
+        .size = 24, // 4 bytes case tag + padding + 13 bytes StringView
+        .hasbit_bytes = 0,
+        .oneof_count = 1,
+        .dense_below = 2,
+    };
+
+    var buffer: [1024]u8 = undefined;
+    var arena = Arena.init(&buffer);
+
+    const msg = Message.new(&arena, &table).?;
+
+    // Set string field
+    msg.set_scalar(&fields[1], .{ .string_val = StringView.from_slice("hello") });
+    assert(msg.which_oneof(0) == 2);
+    assert(msg.has_field(&fields[1]));
+    assert(!msg.has_field(&fields[0]));
+    assert(std.mem.eql(u8, msg.get_scalar(&fields[1]).string_val.slice(), "hello"));
+
+    // Switch to int32 field
+    msg.set_scalar(&fields[0], .{ .int32_val = 42 });
+    assert(msg.which_oneof(0) == 1);
+    assert(msg.has_field(&fields[0]));
+    assert(!msg.has_field(&fields[1]));
+    assert(msg.get_scalar(&fields[0]).int32_val == 42);
 }

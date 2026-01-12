@@ -47,9 +47,11 @@ zig build test-codegen-integration
 ```
 
 **Generated Files:**
-- `descriptor.proto` → `src/generated/descriptor.pb.zig`
 - `plugin.proto` → `src/generated/plugin.pb.zig`
 - `conformance.proto` → `src/generated/conformance.pb.zig`
+
+**Not Generated (uses hand-coded bootstrap):**
+- `descriptor.proto` - Uses proto2 features (optional keyword); see `src/descriptor/bootstrap.zig`
 
 **Generated Code Features:**
 - Clean, idiomatic Zig code with MiniTable definitions

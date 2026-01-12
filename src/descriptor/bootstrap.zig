@@ -22,6 +22,8 @@ const Message = @import("../message.zig").Message;
 // google.protobuf.FieldDescriptorProto
 // Only includes fields needed for building MiniTables.
 pub const FieldDescriptorProto = struct {
+    hasbits: u8 = 0, // Hasbit byte for optional fields
+    _pad0: [3]u8 = [_]u8{0} ** 3,
     name: StringView = StringView.empty(), // Field 1
     number: i32 = 0, // Field 3
     label: i32 = 0, // Field 4 (enum Label)
@@ -40,8 +42,7 @@ pub const field_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 3: number (int32)
     .{
         .number = 3,
@@ -51,8 +52,7 @@ pub const field_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_INT32,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 4: label (enum, int32)
     .{
         .number = 4,
@@ -62,8 +62,7 @@ pub const field_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_ENUM,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 5: type (enum, int32)
     .{
         .number = 5,
@@ -73,8 +72,7 @@ pub const field_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_ENUM,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 6: type_name (string)
     .{
         .number = 6,
@@ -84,26 +82,24 @@ pub const field_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
-    // Field 9: oneof_index (int32)
+            },
+    // Field 9: oneof_index (int32) - has hasbit
     .{
         .number = 9,
         .offset = @offsetOf(FieldDescriptorProto, "oneof_index"),
-        .presence = 0,
+        .presence = 1, // Hasbit index 0 + 1
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_INT32,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const field_descriptor_proto_table = MiniTable{
     .fields = &field_descriptor_proto_fields,
     .submessages = &.{},
     .size = @sizeOf(FieldDescriptorProto),
-    .hasbit_bytes = 0,
+    .hasbit_bytes = 1,  // Track oneof_index presence
     .oneof_count = 0,
     .dense_below = 6,
 };
@@ -123,8 +119,7 @@ pub const oneof_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const oneof_descriptor_proto_table = MiniTable{
@@ -154,8 +149,7 @@ pub const descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 2: field (repeated FieldDescriptorProto)
     .{
         .number = 2,
@@ -165,8 +159,7 @@ pub const descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 3: nested_type (repeated DescriptorProto)
     .{
         .number = 3,
@@ -176,8 +169,7 @@ pub const descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 8: oneof_decl (repeated OneofDescriptorProto)
     .{
         .number = 8,
@@ -187,8 +179,7 @@ pub const descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 // Note: This is a var so we can set up the self-reference for nested_type.
@@ -222,8 +213,7 @@ pub const enum_value_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 2: number (int32)
     .{
         .number = 2,
@@ -233,8 +223,7 @@ pub const enum_value_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_INT32,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const enum_value_descriptor_proto_table = MiniTable{
@@ -262,8 +251,7 @@ pub const enum_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 2: value (repeated EnumValueDescriptorProto)
     .{
         .number = 2,
@@ -273,8 +261,7 @@ pub const enum_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const enum_descriptor_proto_submessages = [_]*const MiniTable{
@@ -309,8 +296,7 @@ pub const file_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 2: package (string)
     .{
         .number = 2,
@@ -320,8 +306,7 @@ pub const file_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 3: dependency (repeated string)
     .{
         .number = 3,
@@ -331,8 +316,7 @@ pub const file_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 4: message_type (repeated DescriptorProto)
     .{
         .number = 4,
@@ -342,8 +326,7 @@ pub const file_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 5: enum_type (repeated EnumDescriptorProto)
     .{
         .number = 5,
@@ -353,8 +336,7 @@ pub const file_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const file_descriptor_proto_submessages = [_]*const MiniTable{
@@ -386,8 +368,7 @@ pub const file_descriptor_set_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const file_descriptor_set_submessages = [_]*const MiniTable{
@@ -424,8 +405,7 @@ pub const code_generator_request_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 2: parameter (string)
     .{
         .number = 2,
@@ -435,8 +415,7 @@ pub const code_generator_request_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 15: proto_file (repeated FileDescriptorProto)
     .{
         .number = 15,
@@ -446,8 +425,7 @@ pub const code_generator_request_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const code_generator_request_submessages = [_]*const MiniTable{
@@ -479,8 +457,7 @@ pub const code_generator_response_file_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 15: content (string)
     .{
         .number = 15,
@@ -490,8 +467,7 @@ pub const code_generator_response_file_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const code_generator_response_file_table = MiniTable{
@@ -519,8 +495,7 @@ pub const code_generator_response_fields = [_]MiniTableField{
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
     // Field 15: file (repeated File)
     .{
         .number = 15,
@@ -530,8 +505,7 @@ pub const code_generator_response_fields = [_]MiniTableField{
         .field_type = .TYPE_MESSAGE,
         .mode = .repeated,
         .is_packed = false,
-        .is_oneof = false,
-    },
+            },
 };
 
 pub const code_generator_response_submessages = [_]*const MiniTable{
