@@ -87,25 +87,14 @@ try proto.decode(&input, msg, &arena, .{
 });
 ```
 
-## Status
-
-100% conformance with official protobuf binary test suite (1199/1199 tests passing).
-
 ## Changelog
 
-### 2026-01-13 - Packed Field Support in Code Generator
-- Code generator now reads `[packed=...]` option from FieldDescriptorProto
-- Proto3 semantics: repeated scalars are packed by default
-- Decoder accepts both packed and unpacked wire formats for compatibility
-- Added FieldOptions to bootstrap schemas
-- Fixed packed/submessage boundary validation (1165 → 1199 conformance tests passing)
-- Conformance runner now uses proper MiniTables for TestAllTypesProto2/Proto3
-- ADR-0002: Packed/Unpacked Field Support
-
-### 2026-01-13 - Differential Testing Infrastructure
+### 2026-01-13 - Differential Testing Infrastructure + Packed Field Support
 - Added `zig build test-differential` to compare proto-zig vs upb reference implementation
 - upb C library integration via Zig's @cImport FFI
 - Fixed BadTag_OverlongVarint validation (1163 → 1165 tests passing)
+- Code generator now reads `[packed=...]` option from FieldDescriptorProto
+- 100% conformance with official protobuf binary test suite (1199/1199 tests passing)
 
 ### 2026-01-12 - Code Generator + Oneof Support
 - `protoc-gen-zig-pb` plugin generates MiniTable definitions from .proto files
