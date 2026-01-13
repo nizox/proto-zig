@@ -362,6 +362,10 @@ fn parseFieldDescriptor(field_msg: *const Message, allocator: Allocator) !FieldI
     const field_type: FieldType = @enumFromInt(@as(u8, @intCast(type_int)));
     const field_label: FieldLabel = @enumFromInt(label);
 
+    // Determine packed encoding based on options and proto3 defaults.
+    // Proto3: repeated scalars are packed by default unless [packed=false].
+    const is_packed = determineIsPacked(field_msg, field_type, field_label);
+
     // Convert to u16, will be validated against oneof_count during layout
     const oneof_idx: ?u16 = if (oneof_index_raw) |idx| @intCast(idx) else null;
 
@@ -372,8 +376,44 @@ fn parseFieldDescriptor(field_msg: *const Message, allocator: Allocator) !FieldI
         .type = field_type,
         .type_name = try allocator.dupe(u8, type_name),
         .oneof_index = oneof_idx,
-        .is_packed = false, // TODO: Read from options
+        .is_packed = is_packed,
     };
+}
+
+/// Determine if a field should use packed encoding.
+/// Proto3 semantics: repeated scalars are packed by default.
+/// Explicit [packed=false] option disables packing.
+fn determineIsPacked(field_msg: *const Message, field_type: FieldType, field_label: FieldLabel) bool {
+    // Only repeated fields can be packed
+    if (field_label != .repeated) return false;
+
+    // Only scalar types (not string, bytes, message, group) can be packed
+    if (!field_type.is_packable()) return false;
+
+    // Check for explicit packed option in FieldOptions (field 8)
+    const options_msg = getMessage(field_msg, 8) orelse {
+        // No options: proto3 default is packed=true for repeated scalars
+        return true;
+    };
+
+    // Read packed field (field 2) from FieldOptions
+    // Check hasbit to see if packed was explicitly set
+    const hasbits_ptr = @as([*]const u8, @ptrCast(options_msg.data.ptr));
+    const hasbit_byte = hasbits_ptr[0];
+    const packed_explicitly_set = (hasbit_byte & 1) != 0; // Hasbit index 0
+
+    if (packed_explicitly_set) {
+        // Explicit value: read the packed field
+        const packed_field = options_msg.table.field_by_number(2) orelse return true;
+        const value = options_msg.get_scalar(packed_field);
+        return switch (value) {
+            .bool_val => |b| b,
+            else => true, // Fallback to proto3 default
+        };
+    }
+
+    // No explicit packed option: proto3 default is packed=true
+    return true;
 }
 
 /// Parse an EnumDescriptorProto message into EnumInfo.

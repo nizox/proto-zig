@@ -13,5 +13,13 @@ message TestMessage {
     string option_b = 5;
   }
 
+  // Packed by default (proto3 behavior)
   repeated int32 numbers = 6;
+
+  // Explicitly unpacked
+  repeated int32 unpacked_numbers = 7 [packed = false];
+
+  // More packed types for testing
+  repeated fixed32 packed_fixed = 8;
+  repeated double packed_double = 9;
 }

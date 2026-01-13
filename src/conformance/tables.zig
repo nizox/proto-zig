@@ -275,3 +275,217 @@ pub const conformance_response_table = MiniTable{
     .oneof_count = 1,
     .dense_below = 6,
 };
+
+// ============================================================================
+// TestAllTypesProto3 - Minimal schema for conformance test validation
+// ============================================================================
+//
+// This is a minimal hand-coded schema containing only the fields needed to
+// validate failing conformance tests:
+// - Field 18: optional_nested_message (for submessage/group validation tests)
+// - Fields 31-42: repeated scalar fields (packed in proto3, for EOF validation)
+
+// NestedMessage for field 18
+const nested_message_fields = [_]MiniTableField{
+    // Field 1: a (int32)
+    .{
+        .number = 1,
+        .offset = 0,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+};
+
+pub const nested_message_table = MiniTable{
+    .fields = &nested_message_fields,
+    .submessages = &.{},
+    .size = 4,
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 1,
+};
+
+// TestAllTypesProto3 fields (minimal set for validation tests)
+// Message size is minimal since we don't actually store values
+const test_all_types_proto3_fields = [_]MiniTableField{
+    // Field 18: optional_nested_message (message)
+    .{
+        .number = 18,
+        .offset = 0,
+        .presence = 0,
+        .submsg_index = 0, // Index into submessages array
+        .field_type = .TYPE_MESSAGE,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 31: repeated_int32 (packed in proto3)
+    .{
+        .number = 31,
+        .offset = 8,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT32,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 32: repeated_int64 (packed in proto3)
+    .{
+        .number = 32,
+        .offset = 32,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT64,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 33: repeated_uint32 (packed in proto3)
+    .{
+        .number = 33,
+        .offset = 56,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_UINT32,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 34: repeated_uint64 (packed in proto3)
+    .{
+        .number = 34,
+        .offset = 80,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_UINT64,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 35: repeated_sint32 (packed in proto3)
+    .{
+        .number = 35,
+        .offset = 104,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SINT32,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 36: repeated_sint64 (packed in proto3)
+    .{
+        .number = 36,
+        .offset = 128,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SINT64,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 37: repeated_fixed32 (packed in proto3)
+    .{
+        .number = 37,
+        .offset = 152,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FIXED32,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 38: repeated_fixed64 (packed in proto3)
+    .{
+        .number = 38,
+        .offset = 176,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FIXED64,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 39: repeated_sfixed32 (packed in proto3)
+    .{
+        .number = 39,
+        .offset = 200,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SFIXED32,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 40: repeated_sfixed64 (packed in proto3)
+    .{
+        .number = 40,
+        .offset = 224,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SFIXED64,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 41: repeated_float (packed in proto3)
+    .{
+        .number = 41,
+        .offset = 248,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FLOAT,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 42: repeated_double (packed in proto3)
+    .{
+        .number = 42,
+        .offset = 272,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_DOUBLE,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 43: repeated_bool (packed in proto3)
+    .{
+        .number = 43,
+        .offset = 296,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_BOOL,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    // Field 51: repeated_nested_enum (packed in proto3)
+    .{
+        .number = 51,
+        .offset = 320,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_ENUM,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+};
+
+const test_all_types_proto3_submessages = [_]*const MiniTable{
+    &nested_message_table,
+};
+
+pub const test_all_types_proto3_table = MiniTable{
+    .fields = &test_all_types_proto3_fields,
+    .submessages = &test_all_types_proto3_submessages,
+    .size = 344, // Space for all repeated fields
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 0, // Use binary search, not dense lookup
+};
+
+// ============================================================================
+// TestAllTypesProto2 - Minimal schema for conformance test validation
+// ============================================================================
+// Proto2 has the same structure as proto3 for the fields we care about
+
+pub const test_all_types_proto2_table = MiniTable{
+    .fields = &test_all_types_proto3_fields,
+    .submessages = &test_all_types_proto3_submessages,
+    .size = 344,
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 0, // Use binary search, not dense lookup
+};

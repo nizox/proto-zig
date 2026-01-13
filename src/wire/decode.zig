@@ -71,6 +71,7 @@ pub fn decode(
     var decoder = Decoder{
         .input = input,
         .pos = 0,
+        .limit = input.len,
         .arena = arena,
         .options = options,
         .depth = 0,
@@ -82,6 +83,7 @@ pub fn decode(
 const Decoder = struct {
     input: []const u8,
     pos: usize,
+    limit: usize, // End boundary for current decode context (packed or full input)
     arena: *Arena,
     options: DecodeOptions,
     depth: u8,
@@ -95,7 +97,7 @@ const Decoder = struct {
             return error.MaxDepthExceeded;
         }
 
-        while (self.pos < self.input.len) {
+        while (self.pos < self.limit) {
             // Read tag.
             const tag_result = reader.read_tag(self.remaining()) catch |err| {
                 return self.convert_error(err);
@@ -127,12 +129,20 @@ const Decoder = struct {
         wire_type: WireType,
     ) DecodeError!void {
         const expected_wire_type = field.wire_type();
+        const native_wire_type = field.field_type.wire_type();
 
-        // Handle packed repeated fields.
+        // Handle packed repeated fields (wire data is packed format).
+        // Accept packed encoding regardless of is_packed setting.
         if (field.mode == .repeated and wire_type == .delimited and
-            expected_wire_type != .delimited)
+            native_wire_type != .delimited)
         {
             return self.decode_packed_repeated(msg, field);
+        }
+
+        // Proto3 compatibility: accept unpacked encoding for packed fields.
+        // Decoders must accept both packed and unpacked formats.
+        if (field.mode == .repeated and field.is_packed and wire_type == native_wire_type) {
+            return self.decode_repeated_element(msg, field);
         }
 
         // Check wire type matches.
@@ -275,7 +285,7 @@ const Decoder = struct {
         };
         self.pos += len_result.consumed;
 
-        if (len_result.value > self.input.len -| self.pos) {
+        if (len_result.value > self.limit -| self.pos) {
             return error.EndOfStream;
         }
         const length: usize = @intCast(len_result.value);
@@ -289,26 +299,28 @@ const Decoder = struct {
             return error.OutOfMemory;
         };
 
-        // Decode submessage with bounded input.
-        const saved_end = self.input.len;
+        // Decode submessage with bounded limit.
+        const saved_limit = self.limit;
         const saved_depth = self.depth;
 
+        self.limit = sub_end;
         self.depth += 1;
+        defer {
+            self.limit = saved_limit;
+            self.depth = saved_depth;
+        }
 
-        // Create a sub-decoder for the submessage.
-        var sub_decoder = Decoder{
-            .input = self.input[0..sub_end],
-            .pos = self.pos,
-            .arena = self.arena,
-            .options = self.options,
-            .depth = self.depth,
+        self.decode_message(sub_msg) catch |err| {
+            // Convert EndOfStream inside submessage to Malformed
+            // since we hit the submessage boundary unexpectedly.
+            if (err == error.EndOfStream) return error.Malformed;
+            return err;
         };
 
-        try sub_decoder.decode_message(sub_msg);
-
-        self.pos = sub_end;
-        self.depth = saved_depth;
-        _ = saved_end;
+        // Ensure we consumed exactly the submessage bytes.
+        if (self.pos != sub_end) {
+            return error.Malformed;
+        }
 
         return sub_msg;
     }
@@ -415,17 +427,29 @@ const Decoder = struct {
         };
         self.pos += len_result.consumed;
 
-        if (len_result.value > self.input.len -| self.pos) {
+        if (len_result.value > self.limit -| self.pos) {
             return error.EndOfStream;
         }
         const length: usize = @intCast(len_result.value);
         const end_pos = self.pos + length;
 
+        // Save and set limit for packed boundary validation.
+        // This ensures element decodes cannot read past the packed region.
+        const saved_limit = self.limit;
+        self.limit = end_pos;
+        defer self.limit = saved_limit;
+
         // Decode packed elements.
         while (self.pos < end_pos) {
-            try self.decode_repeated_element(msg, field);
+            self.decode_repeated_element(msg, field) catch |err| {
+                // Any error during packed decode means malformed packed data.
+                // Convert EndOfStream to Malformed since we hit the packed boundary.
+                if (err == error.EndOfStream) return error.Malformed;
+                return err;
+            };
         }
 
+        // Exact boundary check - pos must equal end_pos after decoding all elements.
         if (self.pos != end_pos) {
             return error.Malformed;
         }
@@ -488,7 +512,7 @@ const Decoder = struct {
     }
 
     fn remaining(self: *const Decoder) []const u8 {
-        return self.input[self.pos..];
+        return self.input[self.pos..self.limit];
     }
 
     fn convert_error(self: *const Decoder, err: reader.ReadError) DecodeError {

@@ -12,7 +12,7 @@ const Mode = proto.Mode;
 const test_message_fields = [_]MiniTableField{
     .{
         .number = 1,
-        .offset = 72,
+        .offset = 128,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_INT32,
@@ -21,7 +21,7 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 2,
-        .offset = 48,
+        .offset = 104,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_STRING,
@@ -30,7 +30,7 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 3,
-        .offset = 64,
+        .offset = 120,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_INT64,
@@ -57,12 +57,39 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 6,
-        .offset = 24,
+        .offset = 32,
+        .presence = 0,
+        .submsg_index = 65535,
+        .field_type = .TYPE_INT32,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    .{
+        .number = 7,
+        .offset = 56,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_INT32,
         .mode = .repeated,
         .is_packed = false,
+    },
+    .{
+        .number = 8,
+        .offset = 8,
+        .presence = -1,
+        .submsg_index = 65535,
+        .field_type = .TYPE_FIXED32,
+        .mode = .repeated,
+        .is_packed = true,
+    },
+    .{
+        .number = 9,
+        .offset = 80,
+        .presence = 0,
+        .submsg_index = 65535,
+        .field_type = .TYPE_DOUBLE,
+        .mode = .repeated,
+        .is_packed = true,
     },
 };
 
@@ -71,9 +98,9 @@ const test_message_submessages = [_]*const MiniTable{};
 pub const test_message_table: MiniTable = .{
     .fields = &test_message_fields,
     .submessages = &test_message_submessages,
-    .size = 76,
+    .size = 132,
     .hasbit_bytes = 0,
     .oneof_count = 1,
-    .dense_below = 6,
+    .dense_below = 9,
 };
 

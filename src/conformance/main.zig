@@ -88,7 +88,10 @@ const Response = struct {
 };
 
 // A minimal MiniTable with no fields - all fields are treated as unknown.
-// Used to validate wire format through the decoder without needing a schema.
+// This validates basic wire format but cannot validate:
+// - Packed field boundaries (requires schema to know packed vs unpacked)
+// - Submessage contents (requires schema to know message vs string/bytes)
+// See tables.zig for test_all_types tables that could enable full validation.
 const unknown_fields_table = proto.MiniTable{
     .fields = &.{},
     .submessages = &.{},
@@ -129,10 +132,17 @@ fn process_request(request_bytes: []const u8, arena: *Arena) Response {
         return make_skipped_response("Only protobuf output supported");
     }
 
+    // Select table based on message type for proper validation.
+    // Using proper tables enables packed field boundary validation.
+    const table = if (std.mem.eql(u8, req.message_type, "protobuf_test_messages.proto3.TestAllTypesProto3"))
+        &conformance.test_all_types_proto3_table
+    else if (std.mem.eql(u8, req.message_type, "protobuf_test_messages.proto2.TestAllTypesProto2"))
+        &conformance.test_all_types_proto2_table
+    else
+        &unknown_fields_table;
+
     // Decode the payload to validate wire format.
-    // This catches malformed input inline during decoding (upb/TigerBeetle pattern).
-    // We use a minimal "unknown fields only" table to validate wire format without schema.
-    const payload_msg = Message.new(arena, &unknown_fields_table) orelse {
+    const payload_msg = Message.new(arena, table) orelse {
         return make_error_response(2, "Out of memory");
     };
 

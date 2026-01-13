@@ -82,16 +82,58 @@ fn read_varint_slow(bytes: []const u8) ReadError!ReadResult(u64) {
 }
 
 /// Read a tag (field number + wire type) from the input.
+///
+/// Tags must fit in 32 bits and be encoded in at most 5 varint bytes.
+/// Tags encoded with more than 5 bytes are rejected as overlong.
 pub fn read_tag(bytes: []const u8) ReadError!ReadResult(Tag) {
-    const result = try read_varint(bytes);
-
-    // Tag must fit in u32.
-    if (result.value > std.math.maxInt(u32)) {
-        return error.Malformed;
+    if (bytes.len == 0) {
+        return error.EndOfStream;
     }
 
-    const tag = Tag.from_raw(@intCast(result.value));
-    return .{ .value = tag, .consumed = result.consumed };
+    // Fast path: single byte varint (values 0-127).
+    if (bytes[0] < 0x80) {
+        const tag = Tag.from_raw(bytes[0]);
+        return .{ .value = tag, .consumed = 1 };
+    }
+
+    return read_tag_slow(bytes);
+}
+
+fn read_tag_slow(bytes: []const u8) ReadError!ReadResult(Tag) {
+    var value: u32 = 0;
+    var shift: u5 = 0;
+    var i: usize = 0;
+
+    // Tags are at most 5 bytes for 32-bit values.
+    const max_tag_bytes: usize = 5;
+
+    while (i < max_tag_bytes) {
+        if (i >= bytes.len) {
+            return error.EndOfStream;
+        }
+
+        const byte = bytes[i];
+        const payload: u32 = @intCast(byte & 0x7F);
+
+        // Check for overflow on 5th byte (can only contribute 4 bits: 4*7 = 28, need 32 total).
+        if (i == 4 and byte > 0x0F) {
+            return error.VarintOverflow;
+        }
+
+        value |= payload << shift;
+        i += 1;
+
+        // MSB clear means this is the last byte.
+        if (byte < 0x80) {
+            const tag = Tag.from_raw(value);
+            return .{ .value = tag, .consumed = i };
+        }
+
+        shift += 7;
+    }
+
+    // Tag required more than 5 bytes - overlong encoding.
+    return error.VarintOverflow;
 }
 
 /// Read a fixed 32-bit value (little-endian).
@@ -237,6 +279,40 @@ test "read_tag: field 1 varint" {
     const result = try read_tag(&.{0x08});
     assert(result.value.field_number == 1);
     assert(result.value.wire_type == .varint);
+}
+
+test "read_tag: multi-byte" {
+    // Field 150, varint (example from protobuf docs).
+    // Tag = 150 << 3 | 0 = 1200 = 0x04B0.
+    // Varint encoding: 0xB0 0x09.
+    const result = try read_tag(&.{ 0xB0, 0x09 });
+    assert(result.value.field_number == 150);
+    assert(result.value.wire_type == .varint);
+    assert(result.consumed == 2);
+}
+
+test "read_tag: max 5 bytes" {
+    // Max u32 = 0xFFFFFFFF encoded in 5 bytes.
+    const max_bytes = [_]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0x0F };
+    const result = try read_tag(&max_bytes);
+    assert(result.value.field_number == std.math.maxInt(u29));
+    assert(result.consumed == 5);
+}
+
+test "read_tag: overlong encoding rejected" {
+    // Value 1 encoded with 6 bytes (overlong).
+    // Normal: 0x08 (1 byte).
+    // Overlong: 0x88 0x80 0x80 0x80 0x80 0x00 (6 bytes).
+    const overlong_bytes = [_]u8{ 0x88, 0x80, 0x80, 0x80, 0x80, 0x00 };
+    const result = read_tag(&overlong_bytes);
+    assert(result == error.VarintOverflow);
+}
+
+test "read_tag: 5th byte overflow rejected" {
+    // 5th byte with high bits set (would overflow u32).
+    const bad_bytes = [_]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0x1F };
+    const result = read_tag(&bad_bytes);
+    assert(result == error.VarintOverflow);
 }
 
 test "read_fixed32" {

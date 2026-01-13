@@ -88,7 +88,7 @@ zig build
 /path/to/protobuf/bazel-bin/conformance/conformance_test_runner ./zig-out/bin/conformance_zig
 ```
 
-Current status: 1163/1199 binary tests passing (97%). 36 failures require schema-dependent validation.
+Current status: 1165/1199 binary tests passing (97%). 34 failures require schema-dependent validation.
 
 ## Differential Testing
 

@@ -19,6 +19,35 @@ const Message = @import("../message.zig").Message;
 // Descriptor MiniTables (for parsing FileDescriptorSet)
 //
 
+// google.protobuf.FieldOptions
+// Only includes fields needed for packed encoding.
+pub const FieldOptions = struct {
+    hasbits: u8 = 0, // Hasbit byte for optional fields
+    is_packed: bool = false, // Field 2 (packed option)
+};
+
+pub const field_options_fields = [_]MiniTableField{
+    // Field 2: packed (bool)
+    .{
+        .number = 2,
+        .offset = @offsetOf(FieldOptions, "is_packed"),
+        .presence = 1, // Hasbit index 0 + 1 (track explicit presence)
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_BOOL,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+};
+
+pub const field_options_table = MiniTable{
+    .fields = &field_options_fields,
+    .submessages = &.{},
+    .size = @sizeOf(FieldOptions),
+    .hasbit_bytes = 1, // Track packed presence
+    .oneof_count = 0,
+    .dense_below = 2,
+};
+
 // google.protobuf.FieldDescriptorProto
 // Only includes fields needed for building MiniTables.
 pub const FieldDescriptorProto = struct {
@@ -29,6 +58,7 @@ pub const FieldDescriptorProto = struct {
     label: i32 = 0, // Field 4 (enum Label)
     type: i32 = 0, // Field 5 (enum Type)
     type_name: StringView = StringView.empty(), // Field 6
+    options: ?*Message = null, // Field 8 (FieldOptions)
     oneof_index: i32 = 0, // Field 9
 };
 
@@ -83,6 +113,16 @@ pub const field_descriptor_proto_fields = [_]MiniTableField{
         .mode = .scalar,
         .is_packed = false,
             },
+    // Field 8: options (FieldOptions)
+    .{
+        .number = 8,
+        .offset = @offsetOf(FieldDescriptorProto, "options"),
+        .presence = 0, // Pointer presence (null check)
+        .submsg_index = 0, // Index into submessages array
+        .field_type = .TYPE_MESSAGE,
+        .mode = .scalar,
+        .is_packed = false,
+    },
     // Field 9: oneof_index (int32) - has hasbit
     .{
         .number = 9,
@@ -92,14 +132,18 @@ pub const field_descriptor_proto_fields = [_]MiniTableField{
         .field_type = .TYPE_INT32,
         .mode = .scalar,
         .is_packed = false,
-            },
+    },
+};
+
+pub const field_descriptor_proto_submessages = [_]*const MiniTable{
+    &field_options_table,
 };
 
 pub const field_descriptor_proto_table = MiniTable{
     .fields = &field_descriptor_proto_fields,
-    .submessages = &.{},
+    .submessages = &field_descriptor_proto_submessages,
     .size = @sizeOf(FieldDescriptorProto),
-    .hasbit_bytes = 1,  // Track oneof_index presence
+    .hasbit_bytes = 1, // Track oneof_index presence
     .oneof_count = 0,
     .dense_below = 6,
 };
