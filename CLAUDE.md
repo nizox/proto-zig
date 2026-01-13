@@ -72,14 +72,8 @@ zig build check        # Check compilation without full build
 The `protoc-gen-zig-pb` plugin generates MiniTable definitions from .proto files.
 
 ```bash
-zig build update-proto                           # Generate from .proto files
-zig build update-proto -Dprotoc=/path/to/protoc  # Custom protoc binary
 zig build test-codegen-integration               # Run codegen integration tests
 ```
-
-**Generated files:**
-- `plugin.proto` → `src/generated/plugin.pb.zig`
-- `conformance.proto` → `src/generated/conformance.pb.zig`
 
 **Not generated (hand-coded bootstrap):**
 - `descriptor.proto` - Uses proto2 features; see `src/descriptor/bootstrap.zig`
@@ -221,7 +215,6 @@ src/
 │   ├── generator.zig      # Code generation
 │   ├── layout.zig         # Field layout calculation
 │   └── linker.zig         # Submessage linking
-├── generated/             # Generated MiniTables
 ├── fuzz/                  # Fuzz test modules
 ├── fuzz_tests.zig         # Unified fuzzer executable
 └── conformance/

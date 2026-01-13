@@ -38,7 +38,7 @@ Generate the MiniTable definition:
 
 ```bash
 protoc --plugin=protoc-gen-zig-pb=./zig-out/bin/protoc-gen-zig-pb \
-       --zig-pb_out=src/generated person.proto
+       --zig-pb_out=. person.proto
 ```
 
 Use the generated schema to decode and encode messages:
@@ -48,7 +48,7 @@ const std = @import("std");
 const proto = @import("proto");
 
 // Generated MiniTable (or hand-written for simple cases)
-const person = @import("generated/person.pb.zig");
+const person = @import("person.pb.zig");
 
 pub fn main() !void {
     // 1. Create arena with fixed buffer (no dynamic allocation)

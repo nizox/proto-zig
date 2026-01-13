@@ -111,51 +111,11 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(plugin_exe);
 
     // ========================================================================
-    // Update Proto Step (Code Generation)
-    // ========================================================================
-    //
-    // Regenerates .proto MiniTables using protoc-gen-zig-pb plugin.
-    // Requires: protoc and protobuf source at /home/bits/gh/google/protobuf/
-    // Usage: zig build update-proto
-    //
-    // Note: descriptor.proto is NOT generated because it uses proto2 features
-    // (optional keyword, default values). We use hand-coded bootstrap schemas
-    // in src/descriptor/bootstrap.zig instead.
-    //
-    const update_proto_step = b.step("update-proto", "Regenerate .proto MiniTables");
-    const install_plugin = b.addInstallArtifact(plugin_exe, .{});
-    update_proto_step.dependOn(&install_plugin.step);
-
-    // Generate plugin.proto -> src/generated/plugin.pb.zig
-    const plugin_proto_path = b.fmt("{s}/src/google/protobuf/compiler/plugin.proto", .{protobuf_src});
-    const gen_plugin = b.addSystemCommand(&.{
-        protoc_path,
-        b.fmt("--plugin=protoc-gen-zig-pb={s}", .{b.getInstallPath(.bin, "protoc-gen-zig-pb")}),
-        "--zig-pb_out=src/generated",
-        b.fmt("-I{s}/src", .{protobuf_src}),
-        plugin_proto_path,
-    });
-    gen_plugin.step.dependOn(&install_plugin.step);
-    update_proto_step.dependOn(&gen_plugin.step);
-
-    // Generate conformance.proto -> src/generated/conformance.pb.zig
-    const conformance_proto_path = b.fmt("{s}/conformance/conformance.proto", .{protobuf_src});
-    const gen_conformance = b.addSystemCommand(&.{
-        protoc_path,
-        b.fmt("--plugin=protoc-gen-zig-pb={s}", .{b.getInstallPath(.bin, "protoc-gen-zig-pb")}),
-        "--zig-pb_out=src/generated",
-        b.fmt("-I{s}/conformance", .{protobuf_src}),
-        b.fmt("-I{s}/src", .{protobuf_src}),
-        conformance_proto_path,
-    });
-    gen_conformance.step.dependOn(&install_plugin.step);
-    update_proto_step.dependOn(&gen_conformance.step);
-
-    // ========================================================================
     // Code Generation Integration Tests
     // ========================================================================
 
     const codegen_test_step = b.step("test-codegen-integration", "Generate and test code from test .proto files");
+    const install_plugin = b.addInstallArtifact(plugin_exe, .{});
     codegen_test_step.dependOn(&install_plugin.step);
 
     // Generate test/protos/test_message.proto -> test/generated/test_message.pb.zig
