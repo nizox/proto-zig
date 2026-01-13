@@ -152,9 +152,11 @@ pub fn computeLayoutRecursive(msg: *MessageInfo, allocator: Allocator) !void {
 
 /// Compute size in bytes for a field.
 fn fieldSize(ftype: FieldType, label: FieldLabel) u16 {
-    // Repeated fields are pointers to RepeatedField
+    // Repeated fields are stored inline as RepeatedField struct
+    // RepeatedField: data(?[*]u8=8) + count(u32=4) + capacity(u32=4) + element_size(u16=2) = 18 bytes
+    // With 8-byte alignment: 24 bytes
     if (label == .repeated) {
-        return @sizeOf(?*anyopaque); // ?*RepeatedField
+        return 24; // @sizeOf(proto.RepeatedField)
     }
 
     return switch (ftype) {
@@ -263,9 +265,10 @@ test "fieldSize - strings and messages" {
 }
 
 test "fieldSize - repeated" {
-    try testing.expectEqual(@as(u16, 8), fieldSize(.TYPE_INT32, .repeated));
-    try testing.expectEqual(@as(u16, 8), fieldSize(.TYPE_STRING, .repeated));
-    try testing.expectEqual(@as(u16, 8), fieldSize(.TYPE_MESSAGE, .repeated));
+    // RepeatedField is stored inline, not as a pointer
+    try testing.expectEqual(@as(u16, 24), fieldSize(.TYPE_INT32, .repeated));
+    try testing.expectEqual(@as(u16, 24), fieldSize(.TYPE_STRING, .repeated));
+    try testing.expectEqual(@as(u16, 24), fieldSize(.TYPE_MESSAGE, .repeated));
 }
 
 test "computeOneofPresence" {

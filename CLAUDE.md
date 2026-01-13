@@ -36,15 +36,17 @@ Keep implementation simple:
 
 Write tests before implementation:
 
+- Add new test cases for the changed functionality
 - Unit tests for pure logic
 - Fuzz tests for code processing arbitrary data
-- Run `zig build test` to verify
+- Differential tests for decode/encode changes (compare against upb)
+- `zig build test` should run all tests (except slow tests that are using dedicated targets)
 
 ### Pre-Commit Checklist
 
 Before writing a jj description:
 
-- [ ] Tests are passing (`zig build test`)
+- [ ] Tests passing (`zig build test`)
 - [ ] README.md updated with short changelog entry
 - [ ] CLAUDE.md updated if development workflow changed
 
@@ -93,6 +95,50 @@ zig build
 ```
 
 Current status: 1163/1199 binary tests passing (97%). 36 failures require schema-dependent validation.
+
+## Differential Testing
+
+Compare proto-zig decode/encode against upb reference implementation.
+
+```bash
+# Build upb first (requires bazelisk)
+cd /home/bits/gh/google/protobuf
+bazelisk build //upb:amalgamation //third_party/utf8_range:utf8_range
+
+# Run differential tests
+zig build test-differential
+```
+
+### Regenerating Test Schema MiniTables
+
+When modifying `src/testing/test_message.proto`, regenerate both proto-zig and upb MiniTables:
+
+```bash
+# Build upb protoc plugins (one-time, from protobuf repo)
+cd /home/bits/gh/google/protobuf
+bazelisk build //upb_generator/c:protoc-gen-upb //upb_generator/minitable:protoc-gen-upb_minitable
+
+# Generate proto-zig MiniTable (from proto-zig repo)
+cd /home/bits/gh/nizox/proto-zig
+protoc -Isrc/testing --zig-pb_out=src/testing \
+  --plugin=protoc-gen-zig-pb=zig-out/bin/protoc-gen-zig-pb \
+  src/testing/test_message.proto
+
+# Generate upb MiniTables (from proto-zig repo)
+protoc -I. --upb_out=. --upb_minitable_out=. \
+  --plugin=protoc-gen-upb=/home/bits/gh/google/protobuf/bazel-bin/upb_generator/c/protoc-gen-upb \
+  --plugin=protoc-gen-upb_minitable=/home/bits/gh/google/protobuf/bazel-bin/upb_generator/minitable/protoc-gen-upb_minitable \
+  src/testing/test_message.proto
+```
+
+**Generated files:**
+- `src/testing/test_message.pb.zig` - proto-zig MiniTable
+- `src/testing/test_message.upb.h` - upb message accessors
+- `src/testing/test_message.upb.c` - upb message implementation
+- `src/testing/test_message.upb_minitable.h` - upb MiniTable header
+- `src/testing/test_message.upb_minitable.c` - upb MiniTable implementation
+
+See `docs/adr/0001-differential-testing-with-upb.md` for architecture details.
 
 ## Fuzzing
 

@@ -222,6 +222,66 @@ pub fn build(b: *std.Build) void {
     // AFL++ instrumented executables using zig-afl-kit.
     const afl_step = b.step("afl", "Build AFL++ instrumented fuzz executables");
     buildAflInstrumented(b, afl_step, "afl-decode-instr", "src/fuzz/afl_decode.zig", proto_module, target, optimize);
+
+    // ========================================================================
+    // Differential Testing (proto-zig vs upb)
+    // ========================================================================
+    //
+    // Compares proto-zig decode/encode against upb reference implementation.
+    // Requires: upb amalgamation built via bazel in protobuf repo.
+    // Build upb: cd $protobuf_src && bazelisk build //upb:amalgamation
+    //
+    // Generated proto-zig MiniTable for test schema
+    const test_message_module = b.createModule(.{
+        .root_source_file = b.path("src/testing/test_message.pb.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "proto", .module = proto_module },
+        },
+    });
+
+    const differential_test = b.addTest(.{
+        .name = "test-differential",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/testing/differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "proto", .module = proto_module },
+                .{ .name = "test_message", .module = test_message_module },
+            },
+        }),
+    });
+
+    // Link upb amalgamation library and dependencies
+    differential_test.addLibraryPath(.{ .cwd_relative = b.fmt("{s}/bazel-bin/upb", .{protobuf_src}) });
+    differential_test.addLibraryPath(.{ .cwd_relative = b.fmt("{s}/bazel-bin/third_party/utf8_range", .{protobuf_src}) });
+    differential_test.linkSystemLibrary("amalgamation");
+    differential_test.linkSystemLibrary("utf8_range");
+    differential_test.linkLibC();
+
+    // Add upb include paths
+    differential_test.addIncludePath(.{ .cwd_relative = b.fmt("{s}/bazel-bin/upb", .{protobuf_src}) });
+    differential_test.addIncludePath(.{ .cwd_relative = protobuf_src });
+    differential_test.addIncludePath(.{ .cwd_relative = b.fmt("{s}/third_party/utf8_range", .{protobuf_src}) });
+
+    // Compile generated upb test schema files
+    // Add project root so generated includes like "src/testing/test_message.upb_minitable.h" work
+    differential_test.addIncludePath(b.path("."));
+    // Add src/testing for direct header includes in @cImport
+    differential_test.addIncludePath(b.path("src/testing"));
+    differential_test.addCSourceFiles(.{
+        .files = &.{
+            "src/testing/test_message.upb.c",
+            "src/testing/test_message.upb_minitable.c",
+        },
+        .flags = &.{"-std=c99"},
+    });
+
+    const run_differential_test = b.addRunArtifact(differential_test);
+    const differential_step = b.step("test-differential", "Run differential tests (proto-zig vs upb)");
+    differential_step.dependOn(&run_differential_test.step);
 }
 
 fn buildNativeFuzzTest(

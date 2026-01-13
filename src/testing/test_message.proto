@@ -1,0 +1,17 @@
+// Test message for differential testing
+syntax = "proto3";
+
+package testing;
+
+message TestMessage {
+  int32 field1 = 1;
+  string field2 = 2;
+  int64 field3 = 3;
+
+  oneof choice {
+    int32 option_a = 4;
+    string option_b = 5;
+  }
+
+  repeated int32 numbers = 6;
+}

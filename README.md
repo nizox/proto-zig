@@ -93,6 +93,10 @@ try proto.decode(&input, msg, &arena, .{
 
 ## Changelog
 
+### 2026-01-13 - Differential Testing Infrastructure
+- Added `zig build test-differential` to compare proto-zig vs upb reference implementation
+- upb C library integration via Zig's @cImport FFI
+
 ### 2026-01-12 - Code Generator + Oneof Support
 - `protoc-gen-zig-pb` plugin generates MiniTable definitions from .proto files
 - Proper proto3 oneof handling with shared storage and case tags
