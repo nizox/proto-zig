@@ -374,10 +374,21 @@ pub const Message = struct {
     }
 
     fn is_default_value(self: *const Message, field: *const MiniTableField) bool {
+        // For string/bytes, check if length is zero (pointer may be non-null for aliased empty strings).
+        if (field.field_type == .TYPE_STRING or field.field_type == .TYPE_BYTES) {
+            const sv = self.field_ptr_const(field, StringView);
+            return sv.len == 0;
+        }
+
+        // For message fields, check if pointer is null.
+        if (field.field_type == .TYPE_MESSAGE) {
+            const msg_ptr = self.field_ptr_const(field, ?*Message);
+            return msg_ptr.* == null;
+        }
+
+        // For numeric types, check if all bytes are zero.
         const size = self.field_size(field);
         const field_data = self.data[field.offset .. field.offset + size];
-
-        // Check if all bytes are zero.
         for (field_data) |byte| {
             if (byte != 0) return false;
         }

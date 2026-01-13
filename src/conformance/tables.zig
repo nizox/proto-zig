@@ -308,23 +308,191 @@ pub const nested_message_table = MiniTable{
     .dense_below = 1,
 };
 
-// TestAllTypesProto3 fields (minimal set for validation tests)
-// Message size is minimal since we don't actually store values
+// TestAllTypesProto3 fields for canonical encoding conformance tests.
+// Fields must be sorted by field number. Layout:
+//   Offset 0-3: oneof_case (4 bytes)
+//   Offset 4-7: padding
+//   Offset 8-15: optional_nested_message (field 18)
+//   Offset 16-327: packed repeated fields 31-43 (13 × 24 = 312 bytes)
+//   Offset 328-423: repeated string/bytes/message/enum fields 44, 45, 48, 51 (4 × 24 = 96 bytes)
+//   Offset 424-759: unpacked repeated fields 89-102 (14 × 24 = 336 bytes)
+//   Offset 760-871: scalar fields (112 bytes)
+//   Offset 872-887: oneof storage (fields 111-119, 16 bytes)
 const test_all_types_proto3_fields = [_]MiniTableField{
-    // Field 18: optional_nested_message (message)
+    // Field 1: optional_int32
+    .{
+        .number = 1,
+        .offset = 840,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 2: optional_int64
+    .{
+        .number = 2,
+        .offset = 760,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT64,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 3: optional_uint32
+    .{
+        .number = 3,
+        .offset = 844,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_UINT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 4: optional_uint64
+    .{
+        .number = 4,
+        .offset = 768,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_UINT64,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 5: optional_sint32
+    .{
+        .number = 5,
+        .offset = 848,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SINT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 6: optional_sint64
+    .{
+        .number = 6,
+        .offset = 776,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SINT64,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 7: optional_fixed32
+    .{
+        .number = 7,
+        .offset = 852,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FIXED32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 8: optional_fixed64
+    .{
+        .number = 8,
+        .offset = 784,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FIXED64,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 9: optional_sfixed32
+    .{
+        .number = 9,
+        .offset = 856,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SFIXED32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 10: optional_sfixed64
+    .{
+        .number = 10,
+        .offset = 792,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SFIXED64,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 11: optional_float
+    .{
+        .number = 11,
+        .offset = 860,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FLOAT,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 12: optional_double
+    .{
+        .number = 12,
+        .offset = 800,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_DOUBLE,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 13: optional_bool
+    .{
+        .number = 13,
+        .offset = 868,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_BOOL,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 14: optional_string
+    .{
+        .number = 14,
+        .offset = 808,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 15: optional_bytes
+    .{
+        .number = 15,
+        .offset = 824,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_BYTES,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 18: optional_nested_message
     .{
         .number = 18,
-        .offset = 0,
+        .offset = 8,
         .presence = 0,
         .submsg_index = 0, // Index into submessages array
         .field_type = .TYPE_MESSAGE,
         .mode = .scalar,
         .is_packed = false,
     },
+    // Field 21: optional_nested_enum
+    .{
+        .number = 21,
+        .offset = 864,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_ENUM,
+        .mode = .scalar,
+        .is_packed = false,
+    },
     // Field 31: repeated_int32 (packed in proto3)
     .{
         .number = 31,
-        .offset = 8,
+        .offset = 16,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_INT32,
@@ -334,7 +502,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 32: repeated_int64 (packed in proto3)
     .{
         .number = 32,
-        .offset = 32,
+        .offset = 40,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_INT64,
@@ -344,7 +512,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 33: repeated_uint32 (packed in proto3)
     .{
         .number = 33,
-        .offset = 56,
+        .offset = 64,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_UINT32,
@@ -354,7 +522,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 34: repeated_uint64 (packed in proto3)
     .{
         .number = 34,
-        .offset = 80,
+        .offset = 88,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_UINT64,
@@ -364,7 +532,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 35: repeated_sint32 (packed in proto3)
     .{
         .number = 35,
-        .offset = 104,
+        .offset = 112,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_SINT32,
@@ -374,7 +542,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 36: repeated_sint64 (packed in proto3)
     .{
         .number = 36,
-        .offset = 128,
+        .offset = 136,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_SINT64,
@@ -384,7 +552,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 37: repeated_fixed32 (packed in proto3)
     .{
         .number = 37,
-        .offset = 152,
+        .offset = 160,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_FIXED32,
@@ -394,7 +562,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 38: repeated_fixed64 (packed in proto3)
     .{
         .number = 38,
-        .offset = 176,
+        .offset = 184,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_FIXED64,
@@ -404,7 +572,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 39: repeated_sfixed32 (packed in proto3)
     .{
         .number = 39,
-        .offset = 200,
+        .offset = 208,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_SFIXED32,
@@ -414,7 +582,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 40: repeated_sfixed64 (packed in proto3)
     .{
         .number = 40,
-        .offset = 224,
+        .offset = 232,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_SFIXED64,
@@ -424,7 +592,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 41: repeated_float (packed in proto3)
     .{
         .number = 41,
-        .offset = 248,
+        .offset = 256,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_FLOAT,
@@ -434,7 +602,7 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 42: repeated_double (packed in proto3)
     .{
         .number = 42,
-        .offset = 272,
+        .offset = 280,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_DOUBLE,
@@ -444,22 +612,286 @@ const test_all_types_proto3_fields = [_]MiniTableField{
     // Field 43: repeated_bool (packed in proto3)
     .{
         .number = 43,
-        .offset = 296,
+        .offset = 304,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_BOOL,
         .mode = .repeated,
         .is_packed = true,
     },
+    // Field 44: repeated_string (not packable)
+    .{
+        .number = 44,
+        .offset = 328,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 45: repeated_bytes (not packable)
+    .{
+        .number = 45,
+        .offset = 352,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_BYTES,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 48: repeated_nested_message (not packable)
+    .{
+        .number = 48,
+        .offset = 376,
+        .presence = 0,
+        .submsg_index = 0, // Uses nested_message_table
+        .field_type = .TYPE_MESSAGE,
+        .mode = .repeated,
+        .is_packed = false,
+    },
     // Field 51: repeated_nested_enum (packed in proto3)
     .{
         .number = 51,
-        .offset = 320,
+        .offset = 400,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_ENUM,
         .mode = .repeated,
         .is_packed = true,
+    },
+    // Fields 89-102: unpacked repeated fields ([packed = false])
+    // Start at offset 424 (after fields 44, 45, 48, 51)
+    // Field 89: unpacked_int32
+    .{
+        .number = 89,
+        .offset = 424,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT32,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 90: unpacked_int64
+    .{
+        .number = 90,
+        .offset = 448,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_INT64,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 91: unpacked_uint32
+    .{
+        .number = 91,
+        .offset = 472,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_UINT32,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 92: unpacked_uint64
+    .{
+        .number = 92,
+        .offset = 496,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_UINT64,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 93: unpacked_sint32
+    .{
+        .number = 93,
+        .offset = 520,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SINT32,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 94: unpacked_sint64
+    .{
+        .number = 94,
+        .offset = 544,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SINT64,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 95: unpacked_fixed32
+    .{
+        .number = 95,
+        .offset = 568,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FIXED32,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 96: unpacked_fixed64
+    .{
+        .number = 96,
+        .offset = 592,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FIXED64,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 97: unpacked_sfixed32
+    .{
+        .number = 97,
+        .offset = 616,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SFIXED32,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 98: unpacked_sfixed64
+    .{
+        .number = 98,
+        .offset = 640,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_SFIXED64,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 99: unpacked_float
+    .{
+        .number = 99,
+        .offset = 664,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FLOAT,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 100: unpacked_double
+    .{
+        .number = 100,
+        .offset = 688,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_DOUBLE,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 101: unpacked_bool
+    .{
+        .number = 101,
+        .offset = 712,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_BOOL,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Field 102: unpacked_nested_enum
+    .{
+        .number = 102,
+        .offset = 736,
+        .presence = 0,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_ENUM,
+        .mode = .repeated,
+        .is_packed = false,
+    },
+    // Oneof fields 111-119 share storage at offset 872
+    // presence = -1 means oneof_index 0
+    // Field 111: oneof_uint32
+    .{
+        .number = 111,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_UINT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 112: oneof_nested_message
+    .{
+        .number = 112,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = 0,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 113: oneof_string
+    .{
+        .number = 113,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 114: oneof_bytes
+    .{
+        .number = 114,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_BYTES,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 115: oneof_bool
+    .{
+        .number = 115,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_BOOL,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 116: oneof_uint64
+    .{
+        .number = 116,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_UINT64,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 117: oneof_float
+    .{
+        .number = 117,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_FLOAT,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 118: oneof_double
+    .{
+        .number = 118,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_DOUBLE,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    // Field 119: oneof_enum
+    .{
+        .number = 119,
+        .offset = 872,
+        .presence = -1,
+        .submsg_index = MiniTableField.max_submsg_index,
+        .field_type = .TYPE_ENUM,
+        .mode = .scalar,
+        .is_packed = false,
     },
 };
 
@@ -470,9 +902,9 @@ const test_all_types_proto3_submessages = [_]*const MiniTable{
 pub const test_all_types_proto3_table = MiniTable{
     .fields = &test_all_types_proto3_fields,
     .submessages = &test_all_types_proto3_submessages,
-    .size = 344, // Space for all repeated fields
+    .size = 888, // oneof_case(4) + pad(4) + msg(8) + packed(312) + string/bytes/msg(96) + unpacked(336) + scalars(112) + oneof(16)
     .hasbit_bytes = 0,
-    .oneof_count = 0,
+    .oneof_count = 1,
     .dense_below = 0, // Use binary search, not dense lookup
 };
 
@@ -484,8 +916,8 @@ pub const test_all_types_proto3_table = MiniTable{
 pub const test_all_types_proto2_table = MiniTable{
     .fields = &test_all_types_proto3_fields,
     .submessages = &test_all_types_proto3_submessages,
-    .size = 344,
+    .size = 888,
     .hasbit_bytes = 0,
-    .oneof_count = 0,
+    .oneof_count = 1,
     .dense_below = 0, // Use binary search, not dense lookup
 };

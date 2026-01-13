@@ -150,8 +150,11 @@ fn process_request(request_bytes: []const u8, arena: *Arena) Response {
         return make_error_response(1, @errorName(err));
     };
 
-    // For binary round-trip, echo the (now validated) input.
-    return .{ .result_case = 3, .payload = req.protobuf_payload };
+    // Re-encode for canonical output.
+    const output = proto.encode(payload_msg, arena, .{}) catch |err| {
+        return make_error_response(6, @errorName(err));
+    };
+    return .{ .result_case = 3, .payload = StringView.from_slice(output) };
 }
 
 const RequestFields = struct {
