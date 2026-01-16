@@ -36,7 +36,7 @@ pub fn main() !void {
     var arena_buffer: [arena_size]u8 = undefined;
 
     while (true) {
-        var arena = Arena.init(&arena_buffer);
+        var arena = Arena.initBuffer(&arena_buffer, null);
 
         // Read request length.
         const length = read_length() catch |err| {

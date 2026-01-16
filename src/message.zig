@@ -420,8 +420,8 @@ test "Message: basic allocation" {
         .dense_below = 1,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table);
     assert(msg != null);
@@ -450,8 +450,8 @@ test "Message: scalar field access" {
         .dense_below = 1,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
 
@@ -506,8 +506,8 @@ test "Message: oneof field access" {
         .dense_below = 2,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
 
@@ -578,8 +578,8 @@ test "Message: oneof with different types" {
         .dense_below = 2,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
 

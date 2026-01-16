@@ -28,7 +28,7 @@ pub fn main() !void {
     // Allocate arena buffer on heap (16MB would exceed stack limit)
     const arena_buffer = try allocator.alloc(u8, 16 * 1024 * 1024);
     defer allocator.free(arena_buffer);
-    var arena = Arena.init(arena_buffer);
+    var arena = Arena.initBuffer(arena_buffer, null);
 
     // Read CodeGeneratorRequest from stdin
     const stdin = std.fs.File.stdin();

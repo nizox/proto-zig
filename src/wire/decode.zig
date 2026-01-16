@@ -538,8 +538,8 @@ test "decode: empty message" {
         .dense_below = 0,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
     try decode(&.{}, msg, &arena, .{});
@@ -567,8 +567,8 @@ test "decode: single int32 field" {
         .dense_below = 1,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
 
@@ -602,8 +602,8 @@ test "decode: string field" {
         .dense_below = 2,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
 
@@ -637,8 +637,8 @@ test "decode: zero-copy string" {
         .dense_below = 1,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
 
@@ -672,8 +672,8 @@ test "decode: unknown field skipped" {
         .dense_below = 1,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
 

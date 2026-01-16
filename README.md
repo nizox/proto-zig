@@ -53,7 +53,7 @@ const person = @import("person.pb.zig");
 pub fn main() !void {
     // 1. Create arena with fixed buffer (no dynamic allocation)
     var buffer: [4096]u8 = undefined;
-    var arena = proto.Arena.init(&buffer);
+    var arena = proto.Arena.initBuffer(&buffer, null);
 
     // 2. Create message using generated schema
     const msg = proto.Message.new(&arena, &person.person_table) orelse return error.OutOfMemory;
@@ -106,6 +106,13 @@ Proto-zig passes the official protobuf conformance test suite for binary format:
 - MessageSet (3): Proto2 extension feature not supported
 
 ## Changelog
+
+### 2026-01-16 - Arena Allocator Refactoring
+- Arena now supports backing allocator for dynamic growth (`Arena.init(allocator)`)
+- Arena fusing via union-find for lifetime linking (`arena.fuse(other)`)
+- API change: `Arena.init(&buffer)` → `Arena.initBuffer(&buffer, null)`
+- Initial buffers prevent fusing (for lifetime safety)
+- See ADR 0003 for design details
 
 ### 2026-01-13 - Canonical Encoding + Conformance Improvements
 - Conformance runner now re-encodes messages (canonical output) instead of echoing input

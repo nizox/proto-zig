@@ -46,7 +46,7 @@ fn fuzzWithSchema(input: []const u8, schema: *const MiniTable) void {
     };
 
     for (option_variants) |options| {
-        var arena = Arena.init(&arena_buffer);
+        var arena = Arena.initBuffer(&arena_buffer, null);
         const msg = Message.new(&arena, schema) orelse continue;
         _ = decode(input, msg, &arena, options) catch {};
     }

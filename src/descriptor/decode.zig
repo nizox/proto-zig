@@ -457,8 +457,8 @@ fn align_up(value: u16, alignment: u16) u16 {
 // TODO: Implement type name resolution
 
 test "parse empty FileDescriptorSet" {
-    var buffer: [4096]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // Empty FileDescriptorSet (just field 1 with empty repeated field)
     // This is: field tag (08) + varint length (00)
@@ -469,8 +469,8 @@ test "parse empty FileDescriptorSet" {
 }
 
 test "field layout calculation" {
-    var buffer: [4096]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // Create a simple field array
     var fields = [_]MiniTableField{

@@ -52,11 +52,10 @@ const DecodeResult = struct {
 };
 
 /// Decode with proto-zig and extract field values
-fn protoZigDecode(input: []const u8, arena_buf: []u8) DecodeResult {
-    var arena = proto.Arena.init(arena_buf);
-    const msg = proto.Message.new(&arena, proto_zig_table) orelse return .{ .success = false };
+fn protoZigDecode(input: []const u8, arena: *proto.Arena) DecodeResult {
+    const msg = proto.Message.new(arena, proto_zig_table) orelse return .{ .success = false };
 
-    proto.decode(input, msg, &arena, .{}) catch return .{ .success = false };
+    proto.decode(input, msg, arena, .{}) catch return .{ .success = false };
 
     const f1 = msg.get_scalar(&proto_zig_table.fields[0]);
     const f2 = msg.get_scalar(&proto_zig_table.fields[1]);
@@ -152,12 +151,11 @@ fn upbDecode(input: []const u8) DecodeResult {
 }
 
 /// Encode with proto-zig
-fn protoZigEncode(input: []const u8, arena_buf: []u8) ?[]const u8 {
-    var arena = proto.Arena.init(arena_buf);
-    const msg = proto.Message.new(&arena, proto_zig_table) orelse return null;
+fn protoZigEncode(input: []const u8, arena: *proto.Arena) ?[]const u8 {
+    const msg = proto.Message.new(arena, proto_zig_table) orelse return null;
 
-    proto.decode(input, msg, &arena, .{}) catch return null;
-    return proto.encode(msg, &arena, .{}) catch null;
+    proto.decode(input, msg, arena, .{}) catch return null;
+    return proto.encode(msg, arena, .{}) catch null;
 }
 
 /// Encode with upb
@@ -240,12 +238,13 @@ test "upb FFI - generated minitable" {
 }
 
 test "differential - decode int32" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // field1 = 42
     const input = [_]u8{ 0x08, 0x2a };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -256,12 +255,13 @@ test "differential - decode int32" {
 }
 
 test "differential - decode string" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // field2 = "hello"
     const input = [_]u8{ 0x12, 0x05, 'h', 'e', 'l', 'l', 'o' };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -272,12 +272,13 @@ test "differential - decode string" {
 }
 
 test "differential - decode int64" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // field3 = 12345
     const input = [_]u8{ 0x18, 0xb9, 0x60 };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -288,7 +289,8 @@ test "differential - decode int64" {
 }
 
 test "differential - decode all fields" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // field1=42, field2="hello", field3=12345
     const input = [_]u8{
@@ -297,7 +299,7 @@ test "differential - decode all fields" {
         0x18, 0xb9, 0x60, // field 3: varint 12345
     };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -318,7 +320,8 @@ test "differential - decode all fields" {
 }
 
 test "differential - roundtrip encode" {
-    var pz_arena: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
     var upb_out: [4096]u8 = undefined;
 
     // field1=42, field2="hello", field3=12345
@@ -328,7 +331,7 @@ test "differential - roundtrip encode" {
         0x18, 0xb9, 0x60, // field 3: varint 12345
     };
 
-    const pz_encoded = protoZigEncode(&input, &pz_arena);
+    const pz_encoded = protoZigEncode(&input, &arena);
     const upb_encoded = upbEncode(&input, &upb_out);
 
     try std.testing.expect(pz_encoded != null);
@@ -341,12 +344,13 @@ test "differential - roundtrip encode" {
 }
 
 test "differential - negative varint" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // field1 = -1 (encoded as 10-byte varint for int32)
     const input = [_]u8{ 0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01 };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -357,12 +361,13 @@ test "differential - negative varint" {
 }
 
 test "differential - empty message" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // Empty input - all fields should have default values
     const input = [_]u8{};
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -378,7 +383,8 @@ test "differential - empty message" {
 }
 
 test "differential - unknown field" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // field1=42, unknown field 99=123, field3=12345
     const input = [_]u8{
@@ -387,7 +393,7 @@ test "differential - unknown field" {
         0x18, 0xb9, 0x60, // field 3: varint 12345
     };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     // Both should succeed and parse known fields
@@ -400,7 +406,8 @@ test "differential - unknown field" {
 }
 
 test "differential - out of order fields" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // Fields in reverse order: field3, field2, field1
     const input = [_]u8{
@@ -409,7 +416,7 @@ test "differential - out of order fields" {
         0x08, 0x2a, // field 1: varint 42
     };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -418,12 +425,13 @@ test "differential - out of order fields" {
 }
 
 test "differential - oneof option_a (int32)" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // option_a = 99 (field 4)
     const input = [_]u8{ 0x20, 0x63 }; // tag 4, varint 99
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -436,12 +444,13 @@ test "differential - oneof option_a (int32)" {
 }
 
 test "differential - oneof option_b (string)" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // option_b = "test" (field 5)
     const input = [_]u8{ 0x2a, 0x04, 't', 'e', 's', 't' }; // tag 5, string "test"
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -454,7 +463,8 @@ test "differential - oneof option_b (string)" {
 }
 
 test "differential - oneof last value wins" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // option_a = 42, then option_b = "win" - last value should win
     const input = [_]u8{
@@ -462,7 +472,7 @@ test "differential - oneof last value wins" {
         0x2a, 0x03, 'w', 'i', 'n', // option_b = "win" (field 5)
     };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -477,7 +487,8 @@ test "differential - oneof last value wins" {
 }
 
 test "differential - oneof with regular fields" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // field1=42, option_a=99, field3=12345
     const input = [_]u8{
@@ -486,7 +497,7 @@ test "differential - oneof with regular fields" {
         0x18, 0xb9, 0x60, // field 3: varint 12345
     };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -503,13 +514,14 @@ test "differential - oneof with regular fields" {
 }
 
 test "differential - repeated int32 single element" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // numbers = [42] - single element, non-packed
     // tag 6, wire type 0 (varint) = 0x30
     const input = [_]u8{ 0x30, 0x2a };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -522,7 +534,8 @@ test "differential - repeated int32 single element" {
 }
 
 test "differential - repeated int32 multiple non-packed" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // numbers = [1, 2, 3] - multiple elements, non-packed
     const input = [_]u8{
@@ -531,7 +544,7 @@ test "differential - repeated int32 multiple non-packed" {
         0x30, 0x03, // numbers[2] = 3
     };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -544,7 +557,8 @@ test "differential - repeated int32 multiple non-packed" {
 }
 
 test "differential - repeated int32 packed" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // numbers = [1, 2, 3] - packed encoding
     // tag 6, wire type 2 (length-delimited) = 0x32
@@ -555,7 +569,7 @@ test "differential - repeated int32 packed" {
         0x03, // 3
     };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -568,7 +582,8 @@ test "differential - repeated int32 packed" {
 }
 
 test "differential - repeated int32 with other fields" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // field1=42, numbers=[10, 20, 30], field3=999
     const input = [_]u8{
@@ -577,7 +592,7 @@ test "differential - repeated int32 with other fields" {
         0x18, 0xe7, 0x07, // field 3: varint 999
     };
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);
@@ -596,12 +611,13 @@ test "differential - repeated int32 with other fields" {
 }
 
 test "differential - repeated int32 empty" {
-    var arena_buf: [4096]u8 = undefined;
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     // Empty message - no repeated field data
     const input = [_]u8{};
 
-    const pz = protoZigDecode(&input, &arena_buf);
+    const pz = protoZigDecode(&input, &arena);
     const upb_res = upbDecode(&input);
 
     try std.testing.expect(pz.success);

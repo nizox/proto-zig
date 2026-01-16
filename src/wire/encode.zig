@@ -492,8 +492,8 @@ test "encode: empty message" {
         .dense_below = 0,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
     const encoded = try encode(msg, &arena, .{});
@@ -523,8 +523,8 @@ test "encode: single int32 field" {
         .dense_below = 1,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
     msg.set_scalar(&fields[0], .{ .int32_val = 150 });
@@ -557,8 +557,8 @@ test "encode: string field" {
         .dense_below = 2,
     };
 
-    var buffer: [1024]u8 = undefined;
-    var arena = Arena.init(&buffer);
+    var arena = Arena.init(std.testing.allocator);
+    defer arena.deinit();
 
     const msg = Message.new(&arena, &table).?;
     msg.set_scalar(&fields[0], .{ .string_val = StringView.from_slice("testing") });
