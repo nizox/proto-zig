@@ -49,6 +49,10 @@ const DecodeResult = struct {
     // Repeated field
     numbers: ?[]const i32 = null,
     numbers_count: u32 = 0,
+    // Map fields
+    int_to_string_count: u32 = 0,
+    string_to_int_count: u32 = 0,
+    int_to_int_count: u32 = 0,
 };
 
 /// Decode with proto-zig and extract field values
@@ -84,6 +88,44 @@ fn protoZigDecode(input: []const u8, arena: *proto.Arena) DecodeResult {
         }
     }
 
+    // Extract map field counts (fields 9, 10, 11 = indices 9, 10, 11)
+    var int_to_string_count: u32 = 0;
+    var string_to_int_count: u32 = 0;
+    var int_to_int_count: u32 = 0;
+
+    if (proto_zig_table.fields.len > 9) {
+        const map_field = &proto_zig_table.fields[9]; // int_to_string (field 10)
+        if (map_field.mode == .map) {
+            const map_ptr = msg.get_map(map_field);
+            if (map_ptr.ptr != null) {
+                const map = map_ptr.getTyped(proto.DefaultMap(i32, proto.StringView));
+                int_to_string_count = @intCast(map.count());
+            }
+        }
+    }
+
+    if (proto_zig_table.fields.len > 10) {
+        const map_field = &proto_zig_table.fields[10]; // string_to_int (field 11)
+        if (map_field.mode == .map) {
+            const map_ptr = msg.get_map(map_field);
+            if (map_ptr.ptr != null) {
+                const map = map_ptr.getTyped(proto.DefaultMap(proto.StringView, i32));
+                string_to_int_count = @intCast(map.count());
+            }
+        }
+    }
+
+    if (proto_zig_table.fields.len > 11) {
+        const map_field = &proto_zig_table.fields[11]; // int_to_int (field 12)
+        if (map_field.mode == .map) {
+            const map_ptr = msg.get_map(map_field);
+            if (map_ptr.ptr != null) {
+                const map = map_ptr.getTyped(proto.DefaultMap(i32, i32));
+                int_to_int_count = @intCast(map.count());
+            }
+        }
+    }
+
     return .{
         .success = true,
         .field1 = f1.int32_val,
@@ -94,6 +136,9 @@ fn protoZigDecode(input: []const u8, arena: *proto.Arena) DecodeResult {
         .option_b = option_b,
         .numbers = numbers,
         .numbers_count = numbers_count,
+        .int_to_string_count = int_to_string_count,
+        .string_to_int_count = string_to_int_count,
+        .int_to_int_count = int_to_int_count,
     };
 }
 
@@ -137,6 +182,11 @@ fn upbDecode(input: []const u8) DecodeResult {
         numbers = numbers_ptr[0..numbers_size];
     }
 
+    // Extract map field counts
+    const int_to_string_count: u32 = @intCast(upb.testing_TestMessage_int_to_string_size(msg));
+    const string_to_int_count: u32 = @intCast(upb.testing_TestMessage_string_to_int_size(msg));
+    const int_to_int_count: u32 = @intCast(upb.testing_TestMessage_int_to_int_size(msg));
+
     return .{
         .success = true,
         .field1 = f1,
@@ -147,6 +197,9 @@ fn upbDecode(input: []const u8) DecodeResult {
         .option_b = option_b,
         .numbers = numbers,
         .numbers_count = @intCast(numbers_size),
+        .int_to_string_count = int_to_string_count,
+        .string_to_int_count = string_to_int_count,
+        .int_to_int_count = int_to_int_count,
     };
 }
 
@@ -208,6 +261,11 @@ fn compareResults(pz: DecodeResult, upb_res: DecodeResult) bool {
     const pz_nums = pz.numbers orelse &[_]i32{};
     const upb_nums = upb_res.numbers orelse &[_]i32{};
     if (!std.mem.eql(i32, pz_nums, upb_nums)) return false;
+
+    // Compare map field counts
+    if (pz.int_to_string_count != upb_res.int_to_string_count) return false;
+    if (pz.string_to_int_count != upb_res.string_to_int_count) return false;
+    if (pz.int_to_int_count != upb_res.int_to_int_count) return false;
 
     return true;
 }
@@ -625,4 +683,163 @@ test "differential - repeated int32 empty" {
     try std.testing.expectEqual(@as(u32, 0), pz.numbers_count);
     try std.testing.expectEqual(@as(u32, 0), upb_res.numbers_count);
     try std.testing.expect(compareResults(pz, upb_res));
+}
+
+test "differential - map int_to_string single entry" {
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
+
+    // int_to_string[42] = "hello"
+    // Field 10, wire type 2 (length-delimited): tag = (10 << 3) | 2 = 0x52
+    // Entry: key (field 1, varint) = 42, value (field 2, string) = "hello"
+    const input = [_]u8{
+        0x52, 0x09, // field 10, length 9
+        0x08, 0x2a, // key: field 1, varint 42
+        0x12, 0x05, 'h', 'e', 'l', 'l', 'o', // value: field 2, string "hello"
+    };
+
+    const pz = protoZigDecode(&input, &arena);
+    const upb_res = upbDecode(&input);
+
+    try std.testing.expect(pz.success);
+    try std.testing.expect(upb_res.success);
+    try std.testing.expectEqual(@as(u32, 1), pz.int_to_string_count);
+    try std.testing.expectEqual(@as(u32, 1), upb_res.int_to_string_count);
+    try std.testing.expect(compareResults(pz, upb_res));
+
+    std.debug.print("Differential map int_to_string test passed!\n", .{});
+}
+
+test "differential - map int_to_string multiple entries" {
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
+
+    // int_to_string[1] = "one", int_to_string[2] = "two"
+    const input = [_]u8{
+        0x52, 0x07, // field 10, length 7
+        0x08, 0x01, // key: 1
+        0x12, 0x03, 'o', 'n', 'e', // value: "one"
+        0x52, 0x07, // field 10, length 7
+        0x08, 0x02, // key: 2
+        0x12, 0x03, 't', 'w', 'o', // value: "two"
+    };
+
+    const pz = protoZigDecode(&input, &arena);
+    const upb_res = upbDecode(&input);
+
+    try std.testing.expect(pz.success);
+    try std.testing.expect(upb_res.success);
+    try std.testing.expectEqual(@as(u32, 2), pz.int_to_string_count);
+    try std.testing.expectEqual(@as(u32, 2), upb_res.int_to_string_count);
+    try std.testing.expect(compareResults(pz, upb_res));
+}
+
+test "differential - map string_to_int" {
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
+
+    // string_to_int["key"] = 42
+    // Field 11, wire type 2: tag = (11 << 3) | 2 = 0x5a
+    const input = [_]u8{
+        0x5a, 0x07, // field 11, length 7
+        0x0a, 0x03, 'k', 'e', 'y', // key: field 1, string "key"
+        0x10, 0x2a, // value: field 2, varint 42
+    };
+
+    const pz = protoZigDecode(&input, &arena);
+    const upb_res = upbDecode(&input);
+
+    try std.testing.expect(pz.success);
+    try std.testing.expect(upb_res.success);
+    try std.testing.expectEqual(@as(u32, 1), pz.string_to_int_count);
+    try std.testing.expectEqual(@as(u32, 1), upb_res.string_to_int_count);
+    try std.testing.expect(compareResults(pz, upb_res));
+
+    std.debug.print("Differential map string_to_int test passed!\n", .{});
+}
+
+test "differential - map int_to_int" {
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
+
+    // int_to_int[1] = 100, int_to_int[2] = 200, int_to_int[3] = 300
+    // Field 12, wire type 2: tag = (12 << 3) | 2 = 0x62
+    const input = [_]u8{
+        0x62, 0x04, // field 12, length 4
+        0x08, 0x01, // key: 1
+        0x10, 0x64, // value: 100
+        0x62, 0x05, // field 12, length 5
+        0x08, 0x02, // key: 2
+        0x10, 0xc8, 0x01, // value: 200
+        0x62, 0x05, // field 12, length 5
+        0x08, 0x03, // key: 3
+        0x10, 0xac, 0x02, // value: 300
+    };
+
+    const pz = protoZigDecode(&input, &arena);
+    const upb_res = upbDecode(&input);
+
+    try std.testing.expect(pz.success);
+    try std.testing.expect(upb_res.success);
+    try std.testing.expectEqual(@as(u32, 3), pz.int_to_int_count);
+    try std.testing.expectEqual(@as(u32, 3), upb_res.int_to_int_count);
+    try std.testing.expect(compareResults(pz, upb_res));
+
+    std.debug.print("Differential map int_to_int test passed!\n", .{});
+}
+
+test "differential - map with other fields" {
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
+
+    // field1=42, int_to_string[1]="a", field3=999
+    const input = [_]u8{
+        0x08, 0x2a, // field 1: varint 42
+        0x52, 0x05, // field 10, length 5
+        0x08, 0x01, // key: 1
+        0x12, 0x01, 'a', // value: "a"
+        0x18, 0xe7, 0x07, // field 3: varint 999
+    };
+
+    const pz = protoZigDecode(&input, &arena);
+    const upb_res = upbDecode(&input);
+
+    try std.testing.expect(pz.success);
+    try std.testing.expect(upb_res.success);
+    try std.testing.expectEqual(@as(i32, 42), pz.field1.?);
+    try std.testing.expectEqual(@as(i32, 42), upb_res.field1.?);
+    try std.testing.expectEqual(@as(i64, 999), pz.field3.?);
+    try std.testing.expectEqual(@as(i64, 999), upb_res.field3.?);
+    try std.testing.expectEqual(@as(u32, 1), pz.int_to_string_count);
+    try std.testing.expectEqual(@as(u32, 1), upb_res.int_to_string_count);
+    try std.testing.expect(compareResults(pz, upb_res));
+
+    std.debug.print("Differential map with other fields test passed!\n", .{});
+}
+
+test "differential - map duplicate key" {
+    var arena = proto.Arena.init(std.testing.allocator);
+    defer arena.deinit();
+
+    // int_to_string[1] = "first", int_to_string[1] = "second" (same key, should overwrite)
+    const input = [_]u8{
+        0x52, 0x09, // field 10, length 9
+        0x08, 0x01, // key: 1
+        0x12, 0x05, 'f', 'i', 'r', 's', 't', // value: "first"
+        0x52, 0x0a, // field 10, length 10
+        0x08, 0x01, // key: 1 (duplicate)
+        0x12, 0x06, 's', 'e', 'c', 'o', 'n', 'd', // value: "second"
+    };
+
+    const pz = protoZigDecode(&input, &arena);
+    const upb_res = upbDecode(&input);
+
+    try std.testing.expect(pz.success);
+    try std.testing.expect(upb_res.success);
+    // Duplicate key should result in 1 entry (last value wins)
+    try std.testing.expectEqual(@as(u32, 1), pz.int_to_string_count);
+    try std.testing.expectEqual(@as(u32, 1), upb_res.int_to_string_count);
+    try std.testing.expect(compareResults(pz, upb_res));
+
+    std.debug.print("Differential map duplicate key test passed!\n", .{});
 }

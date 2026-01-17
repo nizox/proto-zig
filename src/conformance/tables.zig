@@ -659,6 +659,198 @@ const test_all_types_proto3_fields = [_]MiniTableField{
         .mode = .repeated,
         .is_packed = true,
     },
+    // Map fields 56-74 start at offset 888 (after oneof storage)
+    // Each MapField is 16 bytes
+    // Field 56: map_int32_int32
+    .{
+        .number = 56,
+        .offset = 888,
+        .presence = 0,
+        .submsg_index = 1,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 57: map_int64_int64
+    .{
+        .number = 57,
+        .offset = 904,
+        .presence = 0,
+        .submsg_index = 2,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 58: map_uint32_uint32
+    .{
+        .number = 58,
+        .offset = 920,
+        .presence = 0,
+        .submsg_index = 3,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 59: map_uint64_uint64
+    .{
+        .number = 59,
+        .offset = 936,
+        .presence = 0,
+        .submsg_index = 4,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 60: map_sint32_sint32
+    .{
+        .number = 60,
+        .offset = 952,
+        .presence = 0,
+        .submsg_index = 5,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 61: map_sint64_sint64
+    .{
+        .number = 61,
+        .offset = 968,
+        .presence = 0,
+        .submsg_index = 6,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 62: map_fixed32_fixed32
+    .{
+        .number = 62,
+        .offset = 984,
+        .presence = 0,
+        .submsg_index = 7,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 63: map_fixed64_fixed64
+    .{
+        .number = 63,
+        .offset = 1000,
+        .presence = 0,
+        .submsg_index = 8,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 64: map_sfixed32_sfixed32
+    .{
+        .number = 64,
+        .offset = 1016,
+        .presence = 0,
+        .submsg_index = 9,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 65: map_sfixed64_sfixed64
+    .{
+        .number = 65,
+        .offset = 1032,
+        .presence = 0,
+        .submsg_index = 10,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 66: map_int32_float
+    .{
+        .number = 66,
+        .offset = 1048,
+        .presence = 0,
+        .submsg_index = 11,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 67: map_int32_double
+    .{
+        .number = 67,
+        .offset = 1064,
+        .presence = 0,
+        .submsg_index = 12,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 68: map_bool_bool
+    .{
+        .number = 68,
+        .offset = 1080,
+        .presence = 0,
+        .submsg_index = 13,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 69: map_string_string
+    .{
+        .number = 69,
+        .offset = 1096,
+        .presence = 0,
+        .submsg_index = 14,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 70: map_string_bytes
+    .{
+        .number = 70,
+        .offset = 1112,
+        .presence = 0,
+        .submsg_index = 15,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 71: map_string_nested_message
+    .{
+        .number = 71,
+        .offset = 1128,
+        .presence = 0,
+        .submsg_index = 16,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 72: map_string_foreign_message
+    .{
+        .number = 72,
+        .offset = 1144,
+        .presence = 0,
+        .submsg_index = 17,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 73: map_string_nested_enum
+    .{
+        .number = 73,
+        .offset = 1160,
+        .presence = 0,
+        .submsg_index = 18,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    // Field 74: map_string_foreign_enum
+    .{
+        .number = 74,
+        .offset = 1176,
+        .presence = 0,
+        .submsg_index = 19,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
     // Fields 89-102: unpacked repeated fields ([packed = false])
     // Start at offset 424 (after fields 44, 45, 48, 51)
     // Field 89: unpacked_int32
@@ -896,13 +1088,32 @@ const test_all_types_proto3_fields = [_]MiniTableField{
 };
 
 const test_all_types_proto3_submessages = [_]*const MiniTable{
-    &nested_message_table,
+    &nested_message_table, // Index 0: NestedMessage (for fields 18, 48, 112)
+    &map_int32_int32_entry_table, // Index 1: field 56
+    &map_int64_int64_entry_table, // Index 2: field 57
+    &map_uint32_uint32_entry_table, // Index 3: field 58
+    &map_uint64_uint64_entry_table, // Index 4: field 59
+    &map_sint32_sint32_entry_table, // Index 5: field 60
+    &map_sint64_sint64_entry_table, // Index 6: field 61
+    &map_fixed32_fixed32_entry_table, // Index 7: field 62
+    &map_fixed64_fixed64_entry_table, // Index 8: field 63
+    &map_sfixed32_sfixed32_entry_table, // Index 9: field 64
+    &map_sfixed64_sfixed64_entry_table, // Index 10: field 65
+    &map_int32_float_entry_table, // Index 11: field 66
+    &map_int32_double_entry_table, // Index 12: field 67
+    &map_bool_bool_entry_table, // Index 13: field 68
+    &map_string_string_entry_table, // Index 14: field 69
+    &map_string_bytes_entry_table, // Index 15: field 70
+    &map_string_nested_message_entry_table, // Index 16: field 71
+    &map_string_foreign_message_entry_table, // Index 17: field 72
+    &map_string_nested_enum_entry_table, // Index 18: field 73
+    &map_string_foreign_enum_entry_table, // Index 19: field 74
 };
 
 pub const test_all_types_proto3_table = MiniTable{
     .fields = &test_all_types_proto3_fields,
     .submessages = &test_all_types_proto3_submessages,
-    .size = 888, // oneof_case(4) + pad(4) + msg(8) + packed(312) + string/bytes/msg(96) + unpacked(336) + scalars(112) + oneof(16)
+    .size = 1192, // 888 (original) + 304 (19 map fields * 16 bytes each)
     .hasbit_bytes = 0,
     .oneof_count = 1,
     .dense_below = 0, // Use binary search, not dense lookup
@@ -916,8 +1127,111 @@ pub const test_all_types_proto3_table = MiniTable{
 pub const test_all_types_proto2_table = MiniTable{
     .fields = &test_all_types_proto3_fields,
     .submessages = &test_all_types_proto3_submessages,
-    .size = 888,
+    .size = 1192,
     .hasbit_bytes = 0,
     .oneof_count = 1,
     .dense_below = 0, // Use binary search, not dense lookup
 };
+
+// ============================================================================
+// Map Entry MiniTables for TestAllTypesProto3 map fields (56-74)
+// ============================================================================
+// Each map<K,V> is encoded as repeated submessage with field 1=key, field 2=value.
+
+// ForeignMessage for map_string_foreign_message (same layout as NestedMessage)
+pub const foreign_message_table = nested_message_table;
+
+// Helper: entry with two scalar fields
+fn scalarEntryFields(comptime key_type: FieldType, comptime key_offset: u16, comptime value_type: FieldType, comptime value_offset: u16) [2]MiniTableField {
+    return .{
+        .{ .number = 1, .offset = key_offset, .presence = 0, .submsg_index = MiniTableField.max_submsg_index, .field_type = key_type, .mode = .scalar, .is_packed = false },
+        .{ .number = 2, .offset = value_offset, .presence = 0, .submsg_index = MiniTableField.max_submsg_index, .field_type = value_type, .mode = .scalar, .is_packed = false },
+    };
+}
+
+// Helper: entry with scalar key and message value
+fn scalarMsgEntryFields(comptime key_type: FieldType, comptime key_offset: u16, comptime value_offset: u16, comptime submsg_idx: u16) [2]MiniTableField {
+    return .{
+        .{ .number = 1, .offset = key_offset, .presence = 0, .submsg_index = MiniTableField.max_submsg_index, .field_type = key_type, .mode = .scalar, .is_packed = false },
+        .{ .number = 2, .offset = value_offset, .presence = 0, .submsg_index = submsg_idx, .field_type = .TYPE_MESSAGE, .mode = .scalar, .is_packed = false },
+    };
+}
+
+// Map entry tables for fields 56-74
+// Field 56: map<int32, int32>
+const map_int32_int32_entry_fields = scalarEntryFields(.TYPE_INT32, 0, .TYPE_INT32, 4);
+pub const map_int32_int32_entry_table = MiniTable{ .fields = &map_int32_int32_entry_fields, .submessages = &.{}, .size = 8, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 57: map<int64, int64>
+const map_int64_int64_entry_fields = scalarEntryFields(.TYPE_INT64, 0, .TYPE_INT64, 8);
+pub const map_int64_int64_entry_table = MiniTable{ .fields = &map_int64_int64_entry_fields, .submessages = &.{}, .size = 16, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 58: map<uint32, uint32>
+const map_uint32_uint32_entry_fields = scalarEntryFields(.TYPE_UINT32, 0, .TYPE_UINT32, 4);
+pub const map_uint32_uint32_entry_table = MiniTable{ .fields = &map_uint32_uint32_entry_fields, .submessages = &.{}, .size = 8, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 59: map<uint64, uint64>
+const map_uint64_uint64_entry_fields = scalarEntryFields(.TYPE_UINT64, 0, .TYPE_UINT64, 8);
+pub const map_uint64_uint64_entry_table = MiniTable{ .fields = &map_uint64_uint64_entry_fields, .submessages = &.{}, .size = 16, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 60: map<sint32, sint32>
+const map_sint32_sint32_entry_fields = scalarEntryFields(.TYPE_SINT32, 0, .TYPE_SINT32, 4);
+pub const map_sint32_sint32_entry_table = MiniTable{ .fields = &map_sint32_sint32_entry_fields, .submessages = &.{}, .size = 8, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 61: map<sint64, sint64>
+const map_sint64_sint64_entry_fields = scalarEntryFields(.TYPE_SINT64, 0, .TYPE_SINT64, 8);
+pub const map_sint64_sint64_entry_table = MiniTable{ .fields = &map_sint64_sint64_entry_fields, .submessages = &.{}, .size = 16, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 62: map<fixed32, fixed32>
+const map_fixed32_fixed32_entry_fields = scalarEntryFields(.TYPE_FIXED32, 0, .TYPE_FIXED32, 4);
+pub const map_fixed32_fixed32_entry_table = MiniTable{ .fields = &map_fixed32_fixed32_entry_fields, .submessages = &.{}, .size = 8, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 63: map<fixed64, fixed64>
+const map_fixed64_fixed64_entry_fields = scalarEntryFields(.TYPE_FIXED64, 0, .TYPE_FIXED64, 8);
+pub const map_fixed64_fixed64_entry_table = MiniTable{ .fields = &map_fixed64_fixed64_entry_fields, .submessages = &.{}, .size = 16, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 64: map<sfixed32, sfixed32>
+const map_sfixed32_sfixed32_entry_fields = scalarEntryFields(.TYPE_SFIXED32, 0, .TYPE_SFIXED32, 4);
+pub const map_sfixed32_sfixed32_entry_table = MiniTable{ .fields = &map_sfixed32_sfixed32_entry_fields, .submessages = &.{}, .size = 8, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 65: map<sfixed64, sfixed64>
+const map_sfixed64_sfixed64_entry_fields = scalarEntryFields(.TYPE_SFIXED64, 0, .TYPE_SFIXED64, 8);
+pub const map_sfixed64_sfixed64_entry_table = MiniTable{ .fields = &map_sfixed64_sfixed64_entry_fields, .submessages = &.{}, .size = 16, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 66: map<int32, float>
+const map_int32_float_entry_fields = scalarEntryFields(.TYPE_INT32, 0, .TYPE_FLOAT, 4);
+pub const map_int32_float_entry_table = MiniTable{ .fields = &map_int32_float_entry_fields, .submessages = &.{}, .size = 8, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 67: map<int32, double>
+const map_int32_double_entry_fields = scalarEntryFields(.TYPE_INT32, 0, .TYPE_DOUBLE, 8);
+pub const map_int32_double_entry_table = MiniTable{ .fields = &map_int32_double_entry_fields, .submessages = &.{}, .size = 16, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 68: map<bool, bool>
+const map_bool_bool_entry_fields = scalarEntryFields(.TYPE_BOOL, 0, .TYPE_BOOL, 1);
+pub const map_bool_bool_entry_table = MiniTable{ .fields = &map_bool_bool_entry_fields, .submessages = &.{}, .size = 2, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 69: map<string, string>
+const map_string_string_entry_fields = scalarEntryFields(.TYPE_STRING, 0, .TYPE_STRING, 16);
+pub const map_string_string_entry_table = MiniTable{ .fields = &map_string_string_entry_fields, .submessages = &.{}, .size = 32, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 70: map<string, bytes>
+const map_string_bytes_entry_fields = scalarEntryFields(.TYPE_STRING, 0, .TYPE_BYTES, 16);
+pub const map_string_bytes_entry_table = MiniTable{ .fields = &map_string_bytes_entry_fields, .submessages = &.{}, .size = 32, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 71: map<string, NestedMessage> - submsg_index 0 references nested_message_table
+const map_string_nested_message_entry_fields = scalarMsgEntryFields(.TYPE_STRING, 0, 16, 0);
+const map_string_nested_message_entry_submessages = [_]*const MiniTable{&nested_message_table};
+pub const map_string_nested_message_entry_table = MiniTable{ .fields = &map_string_nested_message_entry_fields, .submessages = &map_string_nested_message_entry_submessages, .size = 24, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 72: map<string, ForeignMessage> - submsg_index 0 references nested_message_table (same layout)
+const map_string_foreign_message_entry_fields = scalarMsgEntryFields(.TYPE_STRING, 0, 16, 0);
+const map_string_foreign_message_entry_submessages = [_]*const MiniTable{&nested_message_table};
+pub const map_string_foreign_message_entry_table = MiniTable{ .fields = &map_string_foreign_message_entry_fields, .submessages = &map_string_foreign_message_entry_submessages, .size = 24, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 73: map<string, NestedEnum>
+const map_string_nested_enum_entry_fields = scalarEntryFields(.TYPE_STRING, 0, .TYPE_ENUM, 16);
+pub const map_string_nested_enum_entry_table = MiniTable{ .fields = &map_string_nested_enum_entry_fields, .submessages = &.{}, .size = 24, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };
+
+// Field 74: map<string, ForeignEnum>
+const map_string_foreign_enum_entry_fields = scalarEntryFields(.TYPE_STRING, 0, .TYPE_ENUM, 16);
+pub const map_string_foreign_enum_entry_table = MiniTable{ .fields = &map_string_foreign_enum_entry_fields, .submessages = &.{}, .size = 24, .hasbit_bytes = 0, .oneof_count = 0, .dense_below = 2 };

@@ -21,16 +21,19 @@ const Message = @import("../message.zig").Message;
 
 // google.protobuf.FieldOptions
 // Only includes fields needed for packed encoding.
-pub const FieldOptions = struct {
-    hasbits: u8 = 0, // Hasbit byte for optional fields
-    is_packed: bool = false, // Field 2 (packed option)
-};
+//
+// Layout (explicit, hasbit at offset 0):
+//   offset 0: hasbits (1 byte)
+//   offset 1: is_packed (1 byte, bool)
+//   total size: 2 bytes
+pub const FieldOptions_size: u16 = 2;
+const FO_is_packed: u16 = 1;
 
 pub const field_options_fields = [_]MiniTableField{
     // Field 2: packed (bool)
     .{
         .number = 2,
-        .offset = @offsetOf(FieldOptions, "is_packed"),
+        .offset = FO_is_packed,
         .presence = 1, // Hasbit index 0 + 1 (track explicit presence)
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_BOOL,
@@ -42,7 +45,7 @@ pub const field_options_fields = [_]MiniTableField{
 pub const field_options_table = MiniTable{
     .fields = &field_options_fields,
     .submessages = &.{},
-    .size = @sizeOf(FieldOptions),
+    .size = FieldOptions_size,
     .hasbit_bytes = 1, // Track packed presence
     .oneof_count = 0,
     .dense_below = 2,
@@ -50,73 +53,118 @@ pub const field_options_table = MiniTable{
 
 // google.protobuf.FieldDescriptorProto
 // Only includes fields needed for building MiniTables.
-pub const FieldDescriptorProto = struct {
-    hasbits: u8 = 0, // Hasbit byte for optional fields
-    _pad0: [3]u8 = [_]u8{0} ** 3,
-    name: StringView = StringView.empty(), // Field 1
-    number: i32 = 0, // Field 3
-    label: i32 = 0, // Field 4 (enum Label)
-    type: i32 = 0, // Field 5 (enum Type)
-    type_name: StringView = StringView.empty(), // Field 6
-    options: ?*Message = null, // Field 8 (FieldOptions)
-    oneof_index: i32 = 0, // Field 9
+//
+// Layout (explicit, hasbit at offset 0):
+//   offset 0: hasbits (1 byte)
+//   offset 8: name (StringView, 16 bytes aligned)
+//   offset 24: number (i32, 4 bytes)
+//   offset 28: label (i32, 4 bytes)
+//   offset 32: type (i32, 4 bytes)
+//   offset 40: type_name (StringView, 16 bytes)
+//   offset 56: options (?*Message, 8 bytes)
+//   offset 64: oneof_index (i32, 4 bytes)
+//   total size: 72 bytes
+pub const FieldDescriptorProto_size: u16 = 72;
+
+// Field offsets for FieldDescriptorProto (explicit layout with hasbit at 0)
+const FDP_hasbits: u16 = 0;
+const FDP_name: u16 = 8;
+const FDP_number: u16 = 24;
+const FDP_label: u16 = 28;
+const FDP_type: u16 = 32;
+const FDP_type_name: u16 = 40;
+const FDP_options: u16 = 56;
+const FDP_oneof_index: u16 = 64;
+
+// Struct for reading decoded FieldDescriptorProto messages.
+// Uses extern to guarantee layout matches explicit offsets above.
+pub const FieldDescriptorProto = extern struct {
+    hasbits: u8 = 0, // Hasbit byte at offset 0
+    _pad0: [7]u8 = .{0} ** 7, // Padding to align name at offset 8
+    name: StringView = StringView.empty(), // Field 1 at offset 8
+    number: i32 = 0, // Field 3 at offset 24
+    label: i32 = 0, // Field 4 at offset 28
+    type_: i32 = 0, // Field 5 at offset 32
+    _pad1: [4]u8 = .{0} ** 4, // Padding to align type_name at offset 40
+    type_name: StringView = StringView.empty(), // Field 6 at offset 40
+    options: ?*Message = null, // Field 8 at offset 56
+    oneof_index: i32 = 0, // Field 9 at offset 64
+    _pad2: [4]u8 = .{0} ** 4, // Padding to size 72
+
+    comptime {
+        // Verify layout matches explicit offsets
+        if (@offsetOf(FieldDescriptorProto, "hasbits") != FDP_hasbits) @compileError("hasbits offset mismatch");
+        if (@offsetOf(FieldDescriptorProto, "name") != FDP_name) @compileError("name offset mismatch");
+        if (@offsetOf(FieldDescriptorProto, "number") != FDP_number) @compileError("number offset mismatch");
+        if (@offsetOf(FieldDescriptorProto, "label") != FDP_label) @compileError("label offset mismatch");
+        if (@offsetOf(FieldDescriptorProto, "type_") != FDP_type) @compileError("type offset mismatch");
+        if (@offsetOf(FieldDescriptorProto, "type_name") != FDP_type_name) @compileError("type_name offset mismatch");
+        if (@offsetOf(FieldDescriptorProto, "options") != FDP_options) @compileError("options offset mismatch");
+        if (@offsetOf(FieldDescriptorProto, "oneof_index") != FDP_oneof_index) @compileError("oneof_index offset mismatch");
+        if (@sizeOf(FieldDescriptorProto) != FieldDescriptorProto_size) @compileError("size mismatch");
+    }
+
+    /// Check if oneof_index has explicit presence (hasbit set).
+    pub fn has_oneof_index(self: *const FieldDescriptorProto) bool {
+        return (self.hasbits & 1) != 0;
+    }
 };
 
 pub const field_descriptor_proto_fields = [_]MiniTableField{
     // Field 1: name (string)
     .{
         .number = 1,
-        .offset = @offsetOf(FieldDescriptorProto, "name"),
+        .offset = FDP_name,
         .presence = 0, // Proto3 implicit presence
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-            },
+    },
     // Field 3: number (int32)
     .{
         .number = 3,
-        .offset = @offsetOf(FieldDescriptorProto, "number"),
+        .offset = FDP_number,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_INT32,
         .mode = .scalar,
         .is_packed = false,
-            },
+    },
     // Field 4: label (enum, int32)
     .{
         .number = 4,
-        .offset = @offsetOf(FieldDescriptorProto, "label"),
+        .offset = FDP_label,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_ENUM,
         .mode = .scalar,
         .is_packed = false,
-            },
+    },
     // Field 5: type (enum, int32)
     .{
         .number = 5,
-        .offset = @offsetOf(FieldDescriptorProto, "type"),
+        .offset = FDP_type,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_ENUM,
         .mode = .scalar,
         .is_packed = false,
-            },
+    },
     // Field 6: type_name (string)
     .{
         .number = 6,
-        .offset = @offsetOf(FieldDescriptorProto, "type_name"),
+        .offset = FDP_type_name,
         .presence = 0,
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_STRING,
         .mode = .scalar,
         .is_packed = false,
-            },
+    },
     // Field 8: options (FieldOptions)
     .{
         .number = 8,
-        .offset = @offsetOf(FieldDescriptorProto, "options"),
+        .offset = FDP_options,
         .presence = 0, // Pointer presence (null check)
         .submsg_index = 0, // Index into submessages array
         .field_type = .TYPE_MESSAGE,
@@ -126,7 +174,7 @@ pub const field_descriptor_proto_fields = [_]MiniTableField{
     // Field 9: oneof_index (int32) - has hasbit
     .{
         .number = 9,
-        .offset = @offsetOf(FieldDescriptorProto, "oneof_index"),
+        .offset = FDP_oneof_index,
         .presence = 1, // Hasbit index 0 + 1
         .submsg_index = MiniTableField.max_submsg_index,
         .field_type = .TYPE_INT32,
@@ -142,7 +190,7 @@ pub const field_descriptor_proto_submessages = [_]*const MiniTable{
 pub const field_descriptor_proto_table = MiniTable{
     .fields = &field_descriptor_proto_fields,
     .submessages = &field_descriptor_proto_submessages,
-    .size = @sizeOf(FieldDescriptorProto),
+    .size = FieldDescriptorProto_size,
     .hasbit_bytes = 1, // Track oneof_index presence
     .oneof_count = 0,
     .dense_below = 6,

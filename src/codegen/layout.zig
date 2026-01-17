@@ -83,8 +83,8 @@ pub fn computeLayout(msg: *MessageInfo, allocator: Allocator) !void {
     errdefer layouts.deinit(allocator);
 
     for (regular_fields.items) |field| {
-        const size = fieldSize(field.type, field.label);
-        const align_val = fieldAlignment(field.type, field.label);
+        const size = fieldSizeInfo(field);
+        const align_val = fieldAlignmentInfo(field);
 
         // Align offset
         offset = std.mem.alignForward(u16, offset, align_val);
@@ -171,6 +171,17 @@ fn fieldSize(ftype: FieldType, label: FieldLabel) u16 {
     };
 }
 
+/// Compute size in bytes for a field (full FieldInfo version).
+fn fieldSizeInfo(field: FieldInfo) u16 {
+    // Map fields are stored as MapField struct.
+    // MapField: ptr(?*anyopaque=8) + key_type(u8) + value_type(u8) = 10 bytes
+    // With 8-byte alignment: 16 bytes
+    if (field.is_map_entry) {
+        return 24; // @sizeOf(proto.MapField) - account for padding
+    }
+    return fieldSize(field.type, field.label);
+}
+
 /// Compute alignment requirement for a field.
 fn fieldAlignment(ftype: FieldType, label: FieldLabel) u16 {
     // Repeated fields are pointers
@@ -188,6 +199,15 @@ fn fieldAlignment(ftype: FieldType, label: FieldLabel) u16 {
         .TYPE_MESSAGE => @alignOf(?*anyopaque),
         .TYPE_GROUP => @alignOf(?*anyopaque),
     };
+}
+
+/// Compute alignment requirement for a field (full FieldInfo version).
+fn fieldAlignmentInfo(field: FieldInfo) u16 {
+    // Map fields need pointer alignment.
+    if (field.is_map_entry) {
+        return @alignOf(?*anyopaque);
+    }
+    return fieldAlignment(field.type, field.label);
 }
 
 /// Compute presence encoding for a oneof field.
@@ -209,8 +229,8 @@ fn fieldMode(field: FieldInfo) Mode {
 
 /// Compare fields by size (descending) for optimal packing.
 fn compareBySizeDesc(_: void, a: FieldInfo, b: FieldInfo) bool {
-    const size_a = fieldSize(a.type, a.label);
-    const size_b = fieldSize(b.type, b.label);
+    const size_a = fieldSizeInfo(a);
+    const size_b = fieldSizeInfo(b);
 
     // Sort by size descending (largest first)
     if (size_a != size_b) {

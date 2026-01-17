@@ -7,12 +7,12 @@ const MiniTableField = proto.MiniTableField;
 const FieldType = proto.FieldType;
 const Mode = proto.Mode;
 
-// .testing.TestMessage
+// .testing.TestMessage.IntToStringEntry
 
-const test_message_fields = [_]MiniTableField{
+const int_to_string_entry_fields = [_]MiniTableField{
     .{
         .number = 1,
-        .offset = 128,
+        .offset = 16,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_INT32,
@@ -21,7 +21,109 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 2,
-        .offset = 104,
+        .offset = 0,
+        .presence = 0,
+        .submsg_index = 65535,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+};
+
+const int_to_string_entry_submessages = [_]*const MiniTable{};
+
+pub const int_to_string_entry_table: MiniTable = .{
+    .fields = &int_to_string_entry_fields,
+    .submessages = &int_to_string_entry_submessages,
+    .size = 20,
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 2,
+};
+
+// .testing.TestMessage.StringToIntEntry
+
+const string_to_int_entry_fields = [_]MiniTableField{
+    .{
+        .number = 1,
+        .offset = 0,
+        .presence = 0,
+        .submsg_index = 65535,
+        .field_type = .TYPE_STRING,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    .{
+        .number = 2,
+        .offset = 16,
+        .presence = 0,
+        .submsg_index = 65535,
+        .field_type = .TYPE_INT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+};
+
+const string_to_int_entry_submessages = [_]*const MiniTable{};
+
+pub const string_to_int_entry_table: MiniTable = .{
+    .fields = &string_to_int_entry_fields,
+    .submessages = &string_to_int_entry_submessages,
+    .size = 20,
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 2,
+};
+
+// .testing.TestMessage.IntToIntEntry
+
+const int_to_int_entry_fields = [_]MiniTableField{
+    .{
+        .number = 1,
+        .offset = 0,
+        .presence = 0,
+        .submsg_index = 65535,
+        .field_type = .TYPE_INT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    .{
+        .number = 2,
+        .offset = 4,
+        .presence = 0,
+        .submsg_index = 65535,
+        .field_type = .TYPE_INT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+};
+
+const int_to_int_entry_submessages = [_]*const MiniTable{};
+
+pub const int_to_int_entry_table: MiniTable = .{
+    .fields = &int_to_int_entry_fields,
+    .submessages = &int_to_int_entry_submessages,
+    .size = 8,
+    .hasbit_bytes = 0,
+    .oneof_count = 0,
+    .dense_below = 2,
+};
+
+// .testing.TestMessage
+
+const test_message_fields = [_]MiniTableField{
+    .{
+        .number = 1,
+        .offset = 216,
+        .presence = 0,
+        .submsg_index = 65535,
+        .field_type = .TYPE_INT32,
+        .mode = .scalar,
+        .is_packed = false,
+    },
+    .{
+        .number = 2,
+        .offset = 192,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_STRING,
@@ -30,7 +132,7 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 3,
-        .offset = 120,
+        .offset = 208,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_INT64,
@@ -57,7 +159,7 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 6,
-        .offset = 32,
+        .offset = 24,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_INT32,
@@ -66,7 +168,7 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 7,
-        .offset = 56,
+        .offset = 48,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_INT32,
@@ -75,8 +177,8 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 8,
-        .offset = 8,
-        .presence = -1,
+        .offset = 72,
+        .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_FIXED32,
         .mode = .repeated,
@@ -84,23 +186,54 @@ const test_message_fields = [_]MiniTableField{
     },
     .{
         .number = 9,
-        .offset = 80,
+        .offset = 96,
         .presence = 0,
         .submsg_index = 65535,
         .field_type = .TYPE_DOUBLE,
         .mode = .repeated,
         .is_packed = true,
     },
+    .{
+        .number = 10,
+        .offset = 120,
+        .presence = 0,
+        .submsg_index = 0,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    .{
+        .number = 11,
+        .offset = 144,
+        .presence = 0,
+        .submsg_index = 1,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
+    .{
+        .number = 12,
+        .offset = 168,
+        .presence = 0,
+        .submsg_index = 2,
+        .field_type = .TYPE_MESSAGE,
+        .mode = .map,
+        .is_packed = false,
+    },
 };
 
-const test_message_submessages = [_]*const MiniTable{};
+const test_message_submessages = [_]*const MiniTable{
+    &int_to_string_entry_table,
+    &string_to_int_entry_table,
+    &int_to_int_entry_table,
+};
 
 pub const test_message_table: MiniTable = .{
     .fields = &test_message_fields,
     .submessages = &test_message_submessages,
-    .size = 132,
+    .size = 220,
     .hasbit_bytes = 0,
     .oneof_count = 1,
-    .dense_below = 9,
+    .dense_below = 12,
 };
 

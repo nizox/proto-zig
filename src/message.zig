@@ -10,6 +10,7 @@ const MiniTable = @import("mini_table.zig").MiniTable;
 const MiniTableField = @import("mini_table.zig").MiniTableField;
 const FieldType = @import("mini_table.zig").FieldType;
 const Mode = @import("mini_table.zig").Mode;
+pub const MapField = @import("map.zig").MapField;
 
 /// A string or bytes value that may be aliased to the input buffer.
 /// Using extern struct to ensure consistent layout in message data.
@@ -220,9 +221,22 @@ pub const Message = struct {
 
     /// Get a repeated field.
     pub fn get_repeated(self: *Message, field: *const MiniTableField) *RepeatedField {
-        assert(field.mode == .repeated or field.mode == .map);
+        assert(field.mode == .repeated);
         const ptr = self.field_ptr(field, RepeatedField);
         return ptr;
+    }
+
+    /// Get a map field.
+    pub fn get_map(self: *Message, field: *const MiniTableField) *MapField {
+        assert(field.mode == .map);
+        return self.field_ptr(field, MapField);
+    }
+
+    /// Get a map field (const version).
+    pub fn get_map_const(self: *const Message, field: *const MiniTableField) *const MapField {
+        assert(field.mode == .map);
+        const ptr = self.data.ptr + field.offset;
+        return @ptrCast(@alignCast(ptr));
     }
 
     /// Check if a field is present.

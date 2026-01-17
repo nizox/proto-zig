@@ -130,13 +130,13 @@ pub const Arena = struct {
     }
 
     fn freeAllBlocks(self: *Arena) void {
-        const allocator = self.child_allocator orelse return;
+        const backing = self.child_allocator orelse return;
 
         var block = self.blocks;
         while (block) |b| {
             const next = b.next;
             const slice = @as([*]u8, @ptrCast(b))[0..b.size];
-            allocator.free(slice);
+            backing.free(slice);
             block = next;
         }
         self.blocks = null;
@@ -171,7 +171,7 @@ pub const Arena = struct {
     }
 
     fn slowAlloc(self: *Arena, size: usize) ?[*]u8 {
-        const allocator = self.child_allocator orelse return null;
+        const backing = self.child_allocator orelse return null;
 
         // Calculate block size: at least 256 bytes, or double the last block,
         // or enough to fit the request.
@@ -182,7 +182,7 @@ pub const Arena = struct {
 
         const block_size = @max(target_size, size + header_overhead);
 
-        const mem = allocator.alloc(u8, block_size) catch return null;
+        const mem = backing.alloc(u8, block_size) catch return null;
         const block: *Block = @ptrCast(@alignCast(mem.ptr));
         block.size = mem.len;
         block.next = self.blocks;
@@ -329,6 +329,59 @@ pub const Arena = struct {
     fn max_count(comptime T: type) u32 {
         // Prevent overflow in size calculation.
         return std.math.maxInt(u32) / @sizeOf(T);
+    }
+
+    /// Returns a std.mem.Allocator interface for this arena.
+    /// This allows the arena to be used with std containers like HashMap.
+    pub fn allocator(self: *Arena) std.mem.Allocator {
+        return .{
+            .ptr = self,
+            .vtable = &vtable,
+        };
+    }
+
+    const vtable = std.mem.Allocator.VTable{
+        .alloc = allocatorAlloc,
+        .resize = allocatorResize,
+        .remap = allocatorRemap,
+        .free = allocatorFree,
+    };
+
+    fn allocatorAlloc(ctx: *anyopaque, len: usize, ptr_align: std.mem.Alignment, ret_addr: usize) ?[*]u8 {
+        _ = ptr_align;
+        _ = ret_addr;
+        const self: *Arena = @ptrCast(@alignCast(ctx));
+        if (len == 0) return @as([*]u8, undefined);
+        if (len > std.math.maxInt(u32)) return null;
+        return self.allocBytes(len);
+    }
+
+    fn allocatorResize(ctx: *anyopaque, buf: []u8, buf_align: std.mem.Alignment, new_len: usize, ret_addr: usize) bool {
+        _ = ctx;
+        _ = buf;
+        _ = buf_align;
+        _ = new_len;
+        _ = ret_addr;
+        // Arena doesn't support resize.
+        return false;
+    }
+
+    fn allocatorRemap(ctx: *anyopaque, buf: []u8, buf_align: std.mem.Alignment, new_len: usize, ret_addr: usize) ?[*]u8 {
+        _ = ctx;
+        _ = buf;
+        _ = buf_align;
+        _ = new_len;
+        _ = ret_addr;
+        // Arena doesn't support remap - caller should allocate new and copy.
+        return null;
+    }
+
+    fn allocatorFree(ctx: *anyopaque, buf: []u8, buf_align: std.mem.Alignment, ret_addr: usize) void {
+        _ = ctx;
+        _ = buf;
+        _ = buf_align;
+        _ = ret_addr;
+        // Arena doesn't support individual frees - memory is freed all at once.
     }
 };
 

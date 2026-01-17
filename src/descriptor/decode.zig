@@ -236,8 +236,7 @@ fn build_field(
 
     const number: u32 = @intCast(field_struct.number);
     const label: i32 = field_struct.label;
-    const field_type: i32 = field_struct.type;
-    const oneof_index: i32 = field_struct.oneof_index;
+    const field_type: i32 = field_struct.type_;
 
     // Map protobuf type enum to FieldType
     const ft = map_field_type(field_type);
@@ -245,8 +244,8 @@ fn build_field(
     // Determine mode (scalar/repeated)
     const mode: Mode = if (label == 3) .repeated else .scalar; // 3 = LABEL_REPEATED
 
-    // Determine presence
-    const presence: i16 = if (oneof_index > 0) -1 else 0; // Proto3 implicit presence or oneof
+    // Determine presence - check hasbit for oneof_index explicit presence
+    const presence: i16 = if (field_struct.has_oneof_index()) -1 else 0;
 
     // Track submessage count
     const submsg_index = if (ft == .TYPE_MESSAGE or ft == .TYPE_GROUP) blk: {

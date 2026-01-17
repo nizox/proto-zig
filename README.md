@@ -93,19 +93,31 @@ Proto-zig passes the official protobuf conformance test suite for binary format:
 
 | Metric | Count |
 |--------|-------|
-| Successes | 1033 |
+| Successes | 1271 |
 | Skipped | 1390 |
-| Warnings | 108 |
-| Failures | 269 |
+| Failures | 31 |
 
 **Failure breakdown:**
-- Map fields (240): Maps not yet supported, treated as unknown
-- Proto2 hasbits (16): Proto2 requires explicit field presence tracking
+- Proto2 hasbits (16): Proto2 requires explicit field presence tracking for zero values
+- Message merging (6): Submessages in maps/oneofs should merge, not replace
 - Unknown field preservation (4): Unknown fields not preserved on re-encode
-- Message merging (4): Repeated message fields should merge, not replace
 - MessageSet (3): Proto2 extension feature not supported
+- Unknown field ordering (2): Unknown field order not preserved
 
 ## Changelog
+
+### 2026-01-17 - Map Field Support + Conformance Integration
+- Added map field support with pluggable implementations
+- New `MapField` type in message.zig for storing map data
+- Generic `Decoder(MapImpl)` and `Encoder(MapImpl)` structs
+- Default implementation uses `std.ArrayHashMapUnmanaged` (preserves insertion order)
+- Arena now implements `std.mem.Allocator` interface via `arena.allocator()`
+- Codegen detects map entries via `MessageOptions.map_entry` or structural heuristics
+- Added all 19 map field definitions to conformance test MiniTables (fields 56-74)
+- Fixed map decode crash for empty/missing value entries (creates default empty message)
+- Fixed bootstrap.zig FieldDescriptorProto layout for correct hasbit checking
+- Conformance: 1033 → 1271 successes (+238 tests, mostly map-related)
+- See ADR 0004 for design details
 
 ### 2026-01-16 - Arena Allocator Refactoring
 - Arena now supports backing allocator for dynamic growth (`Arena.init(allocator)`)

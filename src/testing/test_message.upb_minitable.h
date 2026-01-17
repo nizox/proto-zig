@@ -19,6 +19,9 @@ extern "C" {
 #endif
 
 extern const upb_MiniTable testing__TestMessage_msg_init;
+extern const upb_MiniTable testing__TestMessage__IntToStringEntry_msg_init;
+extern const upb_MiniTable testing__TestMessage__StringToIntEntry_msg_init;
+extern const upb_MiniTable testing__TestMessage__IntToIntEntry_msg_init;
 
 extern const upb_MiniTableFile src_testing_test_message_proto_upb_file_layout;
 

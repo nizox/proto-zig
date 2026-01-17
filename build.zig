@@ -235,6 +235,7 @@ pub fn build(b: *std.Build) void {
         .files = &.{
             "src/testing/test_message.upb.c",
             "src/testing/test_message.upb_minitable.c",
+            "src/testing/upb_compat.c",
         },
         .flags = &.{"-std=c99"},
     });

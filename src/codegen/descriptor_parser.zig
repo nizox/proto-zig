@@ -335,16 +335,73 @@ fn parseDescriptorProto(
 
     const oneofs_slice = try oneofs.toOwnedSlice(allocator);
     const fields_slice = try fields.toOwnedSlice(allocator);
+    const nested_slice = try nested_messages.toOwnedSlice(allocator);
+
+    // Detect map_entry from MessageOptions (field 7).
+    // map_entry is field 7 of MessageOptions.
+    const is_map = detectMapEntry(msg);
+
+    // Mark fields that reference map entry nested messages.
+    for (fields_slice) |*field| {
+        if (field.type == .TYPE_MESSAGE and field.label == .repeated) {
+            // Check if this field references a map entry nested message.
+            for (nested_slice) |nested| {
+                if (nested.is_map_entry and
+                    std.mem.endsWith(u8, field.type_name, nested.name))
+                {
+                    field.is_map_entry = true;
+                    break;
+                }
+            }
+        }
+    }
 
     return MessageInfo{
         .name = try allocator.dupe(u8, name),
         .full_name = full_name,
         .fields = fields_slice,
-        .nested_messages = try nested_messages.toOwnedSlice(allocator),
+        .nested_messages = nested_slice,
         .nested_enums = nested_enums,
         .oneofs = oneofs_slice,
-        .is_map_entry = false, // TODO: Check options for map_entry flag
+        .is_map_entry = is_map,
     };
+}
+
+/// Detect if a DescriptorProto represents a map entry message.
+/// Checks MessageOptions.map_entry (field 7 of options, field 7 of DescriptorProto).
+/// Falls back to structural detection if options aren't available.
+fn detectMapEntry(msg: *const Message) bool {
+    // Try to read MessageOptions (field 7)
+    if (getMessage(msg, 7)) |options| {
+        // map_entry is field 7 of MessageOptions (bool)
+        if (options.table.field_by_number(7)) |map_entry_field| {
+            const value = options.get_scalar(map_entry_field);
+            if (value == .bool_val) {
+                return value.bool_val;
+            }
+        }
+    }
+
+    // Fallback: structural detection.
+    // Map entry messages have exactly 2 fields: key=1, value=2.
+    const fields = getRepeated(msg, 2) orelse return false;
+    if (fields.count != 2) return false;
+
+    var has_key = false;
+    var has_value = false;
+
+    for (0..fields.count) |i| {
+        const field_msg_ptr = fields.get(*Message, @intCast(i)) orelse continue;
+        const number = getScalar(field_msg_ptr.*, i32, 3) orelse continue;
+        if (number == 1) has_key = true;
+        if (number == 2) has_value = true;
+    }
+
+    // Also check if name ends with "Entry" (convention for map entries).
+    const name = getString(msg, 1);
+    const name_looks_like_entry = std.mem.endsWith(u8, name, "Entry");
+
+    return has_key and has_value and name_looks_like_entry;
 }
 
 /// Parse a FieldDescriptorProto message into FieldInfo.
@@ -354,9 +411,8 @@ fn parseFieldDescriptor(field_msg: *const Message, allocator: Allocator) !FieldI
     const label = getScalar(field_msg, i32, 4) orelse 1; // label
     const type_int = getScalar(field_msg, i32, 5) orelse 0; // type
     const type_name = getString(field_msg, 6); // type_name
-    // Note: protoc sends oneof_index=0 for ALL fields, even those not in oneofs.
-    // We need to validate the index against the actual oneof count later.
-    // For now, just capture the raw value if present.
+    // Note: protoc sends oneof_index only for fields that are actually in oneofs.
+    // The hasbit in FieldDescriptorProto tracks whether oneof_index was present.
     const oneof_index_raw = getScalar(field_msg, i32, 9); // oneof_index
 
     const field_type: FieldType = @enumFromInt(@as(u8, @intCast(type_int)));

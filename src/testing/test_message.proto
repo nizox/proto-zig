@@ -22,4 +22,9 @@ message TestMessage {
   // More packed types for testing
   repeated fixed32 packed_fixed = 8;
   repeated double packed_double = 9;
+
+  // Map fields for differential testing
+  map<int32, string> int_to_string = 10;
+  map<string, int32> string_to_int = 11;
+  map<int32, int32> int_to_int = 12;
 }

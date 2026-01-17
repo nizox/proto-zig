@@ -71,12 +71,12 @@ typedef enum {
 
 UPB_INLINE testing_TestMessage_choice_oneofcases
 testing_TestMessage_choice_case(const testing_TestMessage* msg) {
-  const upb_MiniTableField field = {4, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {4, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
   return (testing_TestMessage_choice_oneofcases)upb_Message_WhichOneofFieldNumber(
       UPB_UPCAST(msg), &field);
 }
 UPB_INLINE void testing_TestMessage_clear_choice(testing_TestMessage* msg) {
-  const upb_MiniTableField field = {4, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {4, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
   upb_Message_ClearOneof(UPB_UPCAST(msg), &testing__TestMessage_msg_init, &field);
 }
 UPB_INLINE void testing_TestMessage_clear_field1(testing_TestMessage* msg) {
@@ -92,59 +92,59 @@ UPB_INLINE int32_t testing_TestMessage_field1(const testing_TestMessage* msg) {
   return ret;
 }
 UPB_INLINE void testing_TestMessage_clear_field2(testing_TestMessage* msg) {
-  const upb_MiniTableField field = {2, UPB_SIZE(32, 16), 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {2, UPB_SIZE(44, 16), 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
   upb_Message_ClearBaseField(UPB_UPCAST(msg), &field);
 }
 UPB_INLINE upb_StringView testing_TestMessage_field2(const testing_TestMessage* msg) {
   upb_StringView default_val = upb_StringView_FromString("");
   upb_StringView ret;
-  const upb_MiniTableField field = {2, UPB_SIZE(32, 16), 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {2, UPB_SIZE(44, 16), 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
   _upb_Message_GetNonExtensionField(UPB_UPCAST(msg), &field,
                                     &default_val, &ret);
   return ret;
 }
 UPB_INLINE void testing_TestMessage_clear_field3(testing_TestMessage* msg) {
-  const upb_MiniTableField field = {3, 48, 0, kUpb_NoSub, 3, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_8Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {3, UPB_SIZE(64, 48), 0, kUpb_NoSub, 3, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_8Byte << kUpb_FieldRep_Shift)};
   upb_Message_ClearBaseField(UPB_UPCAST(msg), &field);
 }
 UPB_INLINE int64_t testing_TestMessage_field3(const testing_TestMessage* msg) {
   int64_t default_val = (int64_t)0ll;
   int64_t ret;
-  const upb_MiniTableField field = {3, 48, 0, kUpb_NoSub, 3, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_8Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {3, UPB_SIZE(64, 48), 0, kUpb_NoSub, 3, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_8Byte << kUpb_FieldRep_Shift)};
   _upb_Message_GetNonExtensionField(UPB_UPCAST(msg), &field,
                                     &default_val, &ret);
   return ret;
 }
 UPB_INLINE void testing_TestMessage_clear_option_a(testing_TestMessage* msg) {
-  const upb_MiniTableField field = {4, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {4, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
   upb_Message_ClearBaseField(UPB_UPCAST(msg), &field);
 }
 UPB_INLINE int32_t testing_TestMessage_option_a(const testing_TestMessage* msg) {
   int32_t default_val = (int32_t)0;
   int32_t ret;
-  const upb_MiniTableField field = {4, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {4, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
   _upb_Message_GetNonExtensionField(UPB_UPCAST(msg), &field,
                                     &default_val, &ret);
   return ret;
 }
 UPB_INLINE bool testing_TestMessage_has_option_a(const testing_TestMessage* msg) {
-  const upb_MiniTableField field = {4, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {4, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
   return upb_Message_HasBaseField(UPB_UPCAST(msg), &field);
 }
 UPB_INLINE void testing_TestMessage_clear_option_b(testing_TestMessage* msg) {
-  const upb_MiniTableField field = {5, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {5, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
   upb_Message_ClearBaseField(UPB_UPCAST(msg), &field);
 }
 UPB_INLINE upb_StringView testing_TestMessage_option_b(const testing_TestMessage* msg) {
   upb_StringView default_val = upb_StringView_FromString("");
   upb_StringView ret;
-  const upb_MiniTableField field = {5, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {5, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
   _upb_Message_GetNonExtensionField(UPB_UPCAST(msg), &field,
                                     &default_val, &ret);
   return ret;
 }
 UPB_INLINE bool testing_TestMessage_has_option_b(const testing_TestMessage* msg) {
-  const upb_MiniTableField field = {5, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {5, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
   return upb_Message_HasBaseField(UPB_UPCAST(msg), &field);
 }
 UPB_INLINE void testing_TestMessage_clear_numbers(testing_TestMessage* msg) {
@@ -299,25 +299,178 @@ UPB_INLINE upb_Array* _testing_TestMessage_packed_double_mutable_upb_array(
   }
   return arr;
 }
+UPB_INLINE void testing_TestMessage_clear_int_to_string(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  upb_Message_ClearBaseField(UPB_UPCAST(msg), &field);
+}
+UPB_INLINE size_t testing_TestMessage_int_to_string_size(const testing_TestMessage* msg) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToStringEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  return map ? _upb_Map_Size(map) : 0;
+}
+
+UPB_INLINE bool testing_TestMessage_int_to_string_get(const testing_TestMessage* msg,
+                                      int32_t key, upb_StringView* val) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToStringEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  return _upb_Map_Get(map, &key, sizeof(int32_t), val, 0);
+}
+
+UPB_INLINE bool testing_TestMessage_int_to_string_next(const testing_TestMessage* msg,
+                                       int32_t* key,
+                                       upb_StringView* val,
+                                       size_t* iter) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToStringEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  upb_MessageValue k;
+  upb_MessageValue v;
+  if (!upb_Map_Next(map, &k, &v, iter)) return false;
+  memcpy(key, &k, sizeof(*key));
+  memcpy(val, &v, sizeof(*val));
+  return true;
+}
+
+// and ~ a upb_Map for mutable.
+//
+UPB_INLINE const upb_Map* _testing_TestMessage_int_to_string_upb_map(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToStringEntry_msg_init);
+  return upb_Message_GetMap(UPB_UPCAST(msg), &field);
+}
+
+UPB_INLINE upb_Map* _testing_TestMessage_int_to_string_mutable_upb_map(
+    testing_TestMessage* msg, upb_Arena* a) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToStringEntry_msg_init);
+  return _upb_Message_GetOrCreateMutableMap(UPB_UPCAST(msg), &field,
+                                            sizeof(int32_t), 0, a);
+}
+UPB_INLINE void testing_TestMessage_clear_string_to_int(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  upb_Message_ClearBaseField(UPB_UPCAST(msg), &field);
+}
+UPB_INLINE size_t testing_TestMessage_string_to_int_size(const testing_TestMessage* msg) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__StringToIntEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  return map ? _upb_Map_Size(map) : 0;
+}
+
+UPB_INLINE bool testing_TestMessage_string_to_int_get(const testing_TestMessage* msg,
+                                      upb_StringView key, int32_t* val) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__StringToIntEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  return _upb_Map_Get(map, &key, 0, val, sizeof(int32_t));
+}
+
+UPB_INLINE bool testing_TestMessage_string_to_int_next(const testing_TestMessage* msg,
+                                       upb_StringView* key,
+                                       int32_t* val,
+                                       size_t* iter) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__StringToIntEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  upb_MessageValue k;
+  upb_MessageValue v;
+  if (!upb_Map_Next(map, &k, &v, iter)) return false;
+  memcpy(key, &k, sizeof(*key));
+  memcpy(val, &v, sizeof(*val));
+  return true;
+}
+
+// and ~ a upb_Map for mutable.
+//
+UPB_INLINE const upb_Map* _testing_TestMessage_string_to_int_upb_map(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__StringToIntEntry_msg_init);
+  return upb_Message_GetMap(UPB_UPCAST(msg), &field);
+}
+
+UPB_INLINE upb_Map* _testing_TestMessage_string_to_int_mutable_upb_map(
+    testing_TestMessage* msg, upb_Arena* a) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__StringToIntEntry_msg_init);
+  return _upb_Message_GetOrCreateMutableMap(UPB_UPCAST(msg), &field,
+                                            0, sizeof(int32_t), a);
+}
+UPB_INLINE void testing_TestMessage_clear_int_to_int(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  upb_Message_ClearBaseField(UPB_UPCAST(msg), &field);
+}
+UPB_INLINE size_t testing_TestMessage_int_to_int_size(const testing_TestMessage* msg) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToIntEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  return map ? _upb_Map_Size(map) : 0;
+}
+
+UPB_INLINE bool testing_TestMessage_int_to_int_get(const testing_TestMessage* msg,
+                                      int32_t key, int32_t* val) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToIntEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  return _upb_Map_Get(map, &key, sizeof(int32_t), val, sizeof(int32_t));
+}
+
+UPB_INLINE bool testing_TestMessage_int_to_int_next(const testing_TestMessage* msg,
+                                       int32_t* key,
+                                       int32_t* val,
+                                       size_t* iter) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToIntEntry_msg_init);
+  const upb_Map* map = upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  upb_MessageValue k;
+  upb_MessageValue v;
+  if (!upb_Map_Next(map, &k, &v, iter)) return false;
+  memcpy(key, &k, sizeof(*key));
+  memcpy(val, &v, sizeof(*val));
+  return true;
+}
+
+// and ~ a upb_Map for mutable.
+//
+UPB_INLINE const upb_Map* _testing_TestMessage_int_to_int_upb_map(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToIntEntry_msg_init);
+  return upb_Message_GetMap(UPB_UPCAST(msg), &field);
+}
+
+UPB_INLINE upb_Map* _testing_TestMessage_int_to_int_mutable_upb_map(
+    testing_TestMessage* msg, upb_Arena* a) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToIntEntry_msg_init);
+  return _upb_Message_GetOrCreateMutableMap(UPB_UPCAST(msg), &field,
+                                            sizeof(int32_t), sizeof(int32_t), a);
+}
 
 UPB_INLINE void testing_TestMessage_set_field1(testing_TestMessage* msg, int32_t value) {
   const upb_MiniTableField field = {1, 8, 0, kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
   upb_Message_SetBaseField((upb_Message*)msg, &field, &value);
 }
 UPB_INLINE void testing_TestMessage_set_field2(testing_TestMessage* msg, upb_StringView value) {
-  const upb_MiniTableField field = {2, UPB_SIZE(32, 16), 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {2, UPB_SIZE(44, 16), 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
   upb_Message_SetBaseField((upb_Message*)msg, &field, &value);
 }
 UPB_INLINE void testing_TestMessage_set_field3(testing_TestMessage* msg, int64_t value) {
-  const upb_MiniTableField field = {3, 48, 0, kUpb_NoSub, 3, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_8Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {3, UPB_SIZE(64, 48), 0, kUpb_NoSub, 3, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_8Byte << kUpb_FieldRep_Shift)};
   upb_Message_SetBaseField((upb_Message*)msg, &field, &value);
 }
 UPB_INLINE void testing_TestMessage_set_option_a(testing_TestMessage* msg, int32_t value) {
-  const upb_MiniTableField field = {4, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {4, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 5, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_4Byte << kUpb_FieldRep_Shift)};
   upb_Message_SetBaseField((upb_Message*)msg, &field, &value);
 }
 UPB_INLINE void testing_TestMessage_set_option_b(testing_TestMessage* msg, upb_StringView value) {
-  const upb_MiniTableField field = {5, UPB_SIZE(40, 32), UPB_SIZE(-29, -13), kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
+  const upb_MiniTableField field = {5, UPB_SIZE(52, 32), UPB_SIZE(-41, -13), kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
   upb_Message_SetBaseField((upb_Message*)msg, &field, &value);
 }
 UPB_INLINE int32_t* testing_TestMessage_mutable_numbers(testing_TestMessage* msg,
@@ -451,6 +604,81 @@ UPB_INLINE bool testing_TestMessage_add_packed_double(testing_TestMessage* msg, 
   UPB_PRIVATE(_upb_Array_Set)
   (arr, arr->UPB_PRIVATE(size) - 1, &val, sizeof(val));
   return true;
+}
+UPB_INLINE void testing_TestMessage_int_to_string_clear(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToStringEntry_msg_init);
+  upb_Map* map = (upb_Map*)upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return;
+  _upb_Map_Clear(map);
+}
+
+UPB_INLINE bool testing_TestMessage_int_to_string_set(testing_TestMessage* msg, int32_t key,
+                                      upb_StringView val, upb_Arena* a) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToStringEntry_msg_init);
+  upb_Map* map = _upb_Message_GetOrCreateMutableMap(
+      UPB_UPCAST(msg), &field, sizeof(key), 0, a);
+  return _upb_Map_Insert(map, &key, sizeof(key), &val, 0, a) !=
+         kUpb_MapInsertStatus_OutOfMemory;
+}
+
+UPB_INLINE bool testing_TestMessage_int_to_string_delete(testing_TestMessage* msg, int32_t key) {
+  const upb_MiniTableField field = {10, UPB_SIZE(28, 88), 0, 9, 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToStringEntry_msg_init);
+  upb_Map* map = (upb_Map*)upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  return _upb_Map_Delete(map, &key, sizeof(key), NULL);
+}
+UPB_INLINE void testing_TestMessage_string_to_int_clear(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__StringToIntEntry_msg_init);
+  upb_Map* map = (upb_Map*)upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return;
+  _upb_Map_Clear(map);
+}
+
+UPB_INLINE bool testing_TestMessage_string_to_int_set(testing_TestMessage* msg, upb_StringView key,
+                                      int32_t val, upb_Arena* a) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__StringToIntEntry_msg_init);
+  upb_Map* map = _upb_Message_GetOrCreateMutableMap(
+      UPB_UPCAST(msg), &field, 0, sizeof(val), a);
+  return _upb_Map_Insert(map, &key, 0, &val, sizeof(val), a) !=
+         kUpb_MapInsertStatus_OutOfMemory;
+}
+
+UPB_INLINE bool testing_TestMessage_string_to_int_delete(testing_TestMessage* msg, upb_StringView key) {
+  const upb_MiniTableField field = {11, UPB_SIZE(32, 96), 0, UPB_SIZE(7, 8), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__StringToIntEntry_msg_init);
+  upb_Map* map = (upb_Map*)upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  return _upb_Map_Delete(map, &key, 0, NULL);
+}
+UPB_INLINE void testing_TestMessage_int_to_int_clear(testing_TestMessage* msg) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToIntEntry_msg_init);
+  upb_Map* map = (upb_Map*)upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return;
+  _upb_Map_Clear(map);
+}
+
+UPB_INLINE bool testing_TestMessage_int_to_int_set(testing_TestMessage* msg, int32_t key,
+                                      int32_t val, upb_Arena* a) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToIntEntry_msg_init);
+  upb_Map* map = _upb_Message_GetOrCreateMutableMap(
+      UPB_UPCAST(msg), &field, sizeof(key), sizeof(val), a);
+  return _upb_Map_Insert(map, &key, sizeof(key), &val, sizeof(val), a) !=
+         kUpb_MapInsertStatus_OutOfMemory;
+}
+
+UPB_INLINE bool testing_TestMessage_int_to_int_delete(testing_TestMessage* msg, int32_t key) {
+  const upb_MiniTableField field = {12, UPB_SIZE(36, 104), 0, UPB_SIZE(5, 7), 11, (int)kUpb_FieldMode_Map | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
+  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&testing__TestMessage__IntToIntEntry_msg_init);
+  upb_Map* map = (upb_Map*)upb_Message_GetMap(UPB_UPCAST(msg), &field);
+  if (!map) return false;
+  return _upb_Map_Delete(map, &key, sizeof(key), NULL);
 }
 
 #ifdef __cplusplus
